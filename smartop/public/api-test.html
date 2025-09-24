@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SmartOp API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-section h3 { margin-top: 0; color: #333; }
+        button { background: #007cba; color: white; border: none; padding: 10px 15px; margin: 5px; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        textarea { width: 100%; height: 200px; margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 3px; }
+        .success { color: green; }
+        .error { color: red; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SmartOp API Test Dashboard</h1>
+        
+        <div class="test-section">
+            <h3>1. Kullanıcı Kaydı (Register)</h3>
+            <input type="text" id="registerName" placeholder="Ad Soyad" value="Test User">
+            <input type="email" id="registerEmail" placeholder="Email" value="test@example.com">
+            <input type="password" id="registerPassword" placeholder="Şifre" value="password">
+            <input type="password" id="registerPasswordConfirm" placeholder="Şifre Tekrar" value="password">
+            <br>
+            <button onclick="testRegister()">Kayıt Ol</button>
+            <textarea id="registerResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Kullanıcı Girişi (Login)</h3>
+            <input type="email" id="loginEmail" placeholder="Email" value="admin@smartop.com">
+            <input type="password" id="loginPassword" placeholder="Şifre" value="password">
+            <br>
+            <button onclick="testLogin()">Giriş Yap</button>
+            <textarea id="loginResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Kullanıcı Profili (Profile - Token Gerekli)</h3>
+            <input type="text" id="profileToken" placeholder="Bearer Token (Login'den alacaksınız)" style="width: 70%;">
+            <br>
+            <button onclick="testProfile()">Profil Bilgilerini Getir</button>
+            <textarea id="profileResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Kullanıcı Bilgileri (User Info)</h3>
+            <button onclick="testUserInfo()">Kullanıcı Bilgilerini Getir</button>
+            <textarea id="userInfoResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Şirket Listesi (Companies - Permission Required)</h3>
+            <button onclick="testCompanies()">Şirket Listesini Getir</button>
+            <textarea id="companiesResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>6. Admin Dashboard (Admin Role Required)</h3>
+            <button onclick="testAdminDashboard()">Admin Dashboard</button>
+            <textarea id="adminResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>7. Manager Dashboard (Manager/Admin Role Required)</h3>
+            <button onclick="testManagerDashboard()">Manager Dashboard</button>
+            <textarea id="managerResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>8. Makine Listesi (Machines)</h3>
+            <button onclick="testMachines()">Makine Listesini Getir</button>
+            <textarea id="machinesResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>9. Yeni Makine Ekle (Create Machine)</h3>
+            <input type="text" id="machineName" placeholder="Makine Adı" value="Test Makinesi">
+            <input type="text" id="machineType" placeholder="Makine Tipi" value="CNC">
+            <input type="text" id="machineModel" placeholder="Model" value="XYZ-123">
+            <br>
+            <button onclick="testCreateMachine()">Makine Ekle</button>
+            <textarea id="createMachineResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>10. Dashboard (Role-based Dashboard)</h3>
+            <button onclick="testDashboard()">Dashboard Verilerini Getir</button>
+            <textarea id="dashboardResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>11. Kontrol Şablonları (Control Templates)</h3>
+            <button onclick="testControlTemplates()">Kontrol Şablonlarını Getir</button>
+            <textarea id="templatesResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>12. Kontrol Listeleri (Control Lists)</h3>
+            <button onclick="testControlLists()">Kontrol Listelerini Getir</button>
+            <textarea id="controlListsResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>13. Raporlar (Reports)</h3>
+            <button onclick="testReports()">Raporları Getir</button>
+            <textarea id="reportsResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>14. Control List Onaylama/Reddetme</h3>
+            <input type="text" id="controlListId" placeholder="Control List ID" value="1">
+            <input type="text" id="approvalComment" placeholder="Yorum (opsiyonel)">
+            <br>
+            <button onclick="testApproveControlList()">Onayla</button>
+            <button onclick="testRejectControlList()">Reddet</button>
+            <textarea id="approvalResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>15. Makine QR Kod Oluşturma</h3>
+            <input type="text" id="machineIdForQR" placeholder="Makine ID" value="1">
+            <br>
+            <button onclick="testGenerateQRCode()">QR Kod Oluştur</button>
+            <textarea id="qrCodeResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>16. Template'den Control List Oluşturma</h3>
+            <input type="text" id="templateIdForControlList" placeholder="Template ID" value="1">
+            <input type="text" id="machineIdForControlList" placeholder="Makine ID" value="1">
+            <br>
+            <button onclick="testCreateControlListFromTemplate()">Control List Oluştur</button>
+            <textarea id="createControlListResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+
+        <div class="test-section">
+            <h3>17. Çıkış (Logout)</h3>
+            <button onclick="testLogout()">Çıkış Yap</button>
+            <textarea id="logoutResult" readonly placeholder="Sonuç burada görünecek..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8001/api';
+
+        async function makeRequest(url, method = 'GET', data = null, token = null) {
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                }
+            };
+
+            if (token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(url, options);
+                const result = await response.json();
+                
+                return {
+                    status: response.status,
+                    ok: response.ok,
+                    data: result
+                };
+            } catch (error) {
+                return {
+                    status: 0,
+                    ok: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testRegister() {
+            const data = {
+                name: document.getElementById('registerName').value,
+                email: document.getElementById('registerEmail').value,
+                password: document.getElementById('registerPassword').value,
+                password_confirmation: document.getElementById('registerPasswordConfirm').value
+            };
+
+            const result = await makeRequest(`${API_BASE}/register`, 'POST', data);
+            
+            document.getElementById('registerResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testLogin() {
+            const data = {
+                email: document.getElementById('loginEmail').value,
+                password: document.getElementById('loginPassword').value
+            };
+
+            const result = await makeRequest(`${API_BASE}/login`, 'POST', data);
+            
+            if (result.ok && result.data.token) {
+                document.getElementById('profileToken').value = result.data.token;
+            }
+
+            document.getElementById('loginResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testProfile() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('profileResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/profile`, 'GET', null, token);
+            
+            document.getElementById('profileResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testUserInfo() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('userInfoResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/user`, 'GET', null, token);
+            
+            document.getElementById('userInfoResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testCompanies() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('companiesResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/companies`, 'GET', null, token);
+            
+            document.getElementById('companiesResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testAdminDashboard() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('adminResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/admin/dashboard`, 'GET', null, token);
+            
+            document.getElementById('adminResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testManagerDashboard() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('managerResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/manager/dashboard`, 'GET', null, token);
+            
+            document.getElementById('managerResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testMachines() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('machinesResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/machines`, 'GET', null, token);
+            
+            document.getElementById('machinesResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testCreateMachine() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('createMachineResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const data = {
+                name: document.getElementById('machineName').value,
+                type: document.getElementById('machineType').value,
+                model: document.getElementById('machineModel').value,
+                serial_number: 'SN' + Date.now(),
+                manufacturer: 'Test Manufacturer',
+                location: 'Fabrika A - Bölüm 1'
+            };
+
+            const result = await makeRequest(`${API_BASE}/machines`, 'POST', data, token);
+            
+            document.getElementById('createMachineResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testDashboard() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('dashboardResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/dashboard`, 'GET', null, token);
+            
+            document.getElementById('dashboardResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testControlTemplates() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('templatesResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/control-templates`, 'GET', null, token);
+            
+            document.getElementById('templatesResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testControlLists() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('controlListsResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/control-lists`, 'GET', null, token);
+            
+            document.getElementById('controlListsResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testReports() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('reportsResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/reports`, 'GET', null, token);
+            
+            document.getElementById('reportsResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testApproveControlList() {
+            const token = document.getElementById('profileToken').value;
+            const controlListId = document.getElementById('controlListId').value;
+            const comment = document.getElementById('approvalComment').value;
+            
+            if (!token) {
+                document.getElementById('approvalResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+            
+            if (!controlListId) {
+                document.getElementById('approvalResult').value = 'Control List ID gerekli!';
+                return;
+            }
+
+            const data = comment ? { comment: comment } : {};
+            const result = await makeRequest(`${API_BASE}/control-lists/${controlListId}/approve`, 'POST', data, token);
+            
+            document.getElementById('approvalResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testRejectControlList() {
+            const token = document.getElementById('profileToken').value;
+            const controlListId = document.getElementById('controlListId').value;
+            const comment = document.getElementById('approvalComment').value;
+            
+            if (!token) {
+                document.getElementById('approvalResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+            
+            if (!controlListId) {
+                document.getElementById('approvalResult').value = 'Control List ID gerekli!';
+                return;
+            }
+
+            const data = comment ? { comment: comment } : {};
+            const result = await makeRequest(`${API_BASE}/control-lists/${controlListId}/reject`, 'POST', data, token);
+            
+            document.getElementById('approvalResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testGenerateQRCode() {
+            const token = document.getElementById('profileToken').value;
+            const machineId = document.getElementById('machineIdForQR').value;
+            
+            if (!token) {
+                document.getElementById('qrCodeResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+            
+            if (!machineId) {
+                document.getElementById('qrCodeResult').value = 'Makine ID gerekli!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/machines/${machineId}/qr-code`, 'POST', {}, token);
+            
+            document.getElementById('qrCodeResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testCreateControlListFromTemplate() {
+            const token = document.getElementById('profileToken').value;
+            const templateId = document.getElementById('templateIdForControlList').value;
+            const machineId = document.getElementById('machineIdForControlList').value;
+            
+            if (!token) {
+                document.getElementById('createControlListResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+            
+            if (!templateId || !machineId) {
+                document.getElementById('createControlListResult').value = 'Template ID ve Makine ID gerekli!';
+                return;
+            }
+
+            const data = { machine_id: machineId };
+            const result = await makeRequest(`${API_BASE}/control-templates/${templateId}/create-control-list`, 'POST', data, token);
+            
+            document.getElementById('createControlListResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        async function testLogout() {
+            const token = document.getElementById('profileToken').value;
+            
+            if (!token) {
+                document.getElementById('logoutResult').value = 'Lütfen önce login olup token alın!';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/logout`, 'POST', null, token);
+            
+            if (result.ok) {
+                document.getElementById('profileToken').value = '';
+            }
+
+            document.getElementById('logoutResult').value = 
+                `Status: ${result.status}\n` +
+                `Response:\n${JSON.stringify(result.data || result.error, null, 2)}`;
+        }
+
+        // Sayfa yüklendiğinde bilgi göster
+        window.onload = function() {
+            console.log('SmartOp API Test Dashboard yüklendi');
+            console.log('API Base URL:', API_BASE);
+        };
+    </script>
+</body>
+</html>

@@ -61,6 +61,7 @@ class AppColors {
   static const int successGreen = 0xFF4CAF50;
   static const int warningOrange = 0xFFFF9800;
   static const int errorRed = 0xFFE53935;
+  static const int dangerRed = 0xFFE53935;
   static const int infoBlue = 0xFF2196F3;
 
   // Neutral Colors
@@ -68,6 +69,7 @@ class AppColors {
   static const int grey100 = 0xFFF5F5F5;
   static const int grey300 = 0xFFE0E0E0;
   static const int grey500 = 0xFF9E9E9E;
+  static const int grey600 = 0xFF757575;
   static const int grey700 = 0xFF616161;
   static const int grey900 = 0xFF212121;
 }

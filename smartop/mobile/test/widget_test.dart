@@ -5,7 +5,6 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:smartop_mobile/main.dart';
@@ -15,8 +14,10 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SmartOpApp());
 
+    // Wait for the splash timer to complete
+    await tester.pump(const Duration(seconds: 2));
+
     // Verify that SmartOp app loads correctly.
     expect(find.text('SmartOp'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 }

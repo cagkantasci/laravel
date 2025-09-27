@@ -251,4 +251,19 @@ class MockAuthService {
       _currentUser = User.fromJson(jsonDecode(userData));
     }
   }
+
+  // Static getter for current user
+  static User? getCurrentUser() {
+    return _instance._currentUser;
+  }
+
+  // Static getter for current token
+  static String? getCurrentToken() {
+    return _instance._currentToken;
+  }
+
+  // Static getter for current user role
+  static String? getCurrentUserRole() {
+    return _instance._currentUser?.role;
+  }
 }

@@ -17,7 +17,7 @@ void main() async {
   try {
     await AppInitializer().initialize();
   } catch (e) {
-    print('Failed to initialize app services: $e');
+    debugPrint('Failed to initialize app services: $e');
   }
 
   runApp(const SmartOpApp());

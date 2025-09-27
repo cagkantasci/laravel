@@ -4,6 +4,8 @@ import '../../../../core/services/mock_auth_service.dart';
 import '../../data/models/machine.dart';
 import 'machine_control_page.dart';
 import 'add_control_item_page.dart';
+import 'machine_edit_page.dart';
+import '../../../control_lists/presentation/pages/control_list_detail_page.dart';
 
 class MachineDetailPage extends StatefulWidget {
   final Machine machine;
@@ -25,12 +27,19 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Makine düzenleme özelliği yakında...'),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      MachineEditPage(machine: widget.machine),
                 ),
               );
+
+              if (result == true) {
+                // Refresh the page if changes were made
+                setState(() {});
+              }
             },
           ),
           PopupMenuButton<String>(
@@ -149,12 +158,50 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
           ),
           const SizedBox(height: AppSizes.paddingSmall),
           Text(
-            widget.machine.description,
+            widget.machine.model ?? 'Model Belirtilmemiş',
             style: const TextStyle(
-              fontSize: AppSizes.textMedium,
+              fontSize: AppSizes.textLarge,
               color: Colors.white70,
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSizes.paddingMedium),
+
+          // Makine Bilgileri
+          Container(
+            padding: const EdgeInsets.all(AppSizes.paddingMedium),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+            ),
+            child: Column(
+              children: [
+                _buildHeaderInfoRow(
+                  'Çalışma Saati',
+                  '${widget.machine.operatingHours ?? 0} saat',
+                  Icons.access_time,
+                ),
+                const SizedBox(height: AppSizes.paddingSmall),
+                _buildHeaderInfoRow(
+                  'Atanmış Operatör',
+                  widget.machine.assignedOperator ?? 'Atanmamış',
+                  Icons.person,
+                ),
+                const SizedBox(height: AppSizes.paddingSmall),
+                _buildHeaderInfoRow(
+                  'Makine Kodu',
+                  widget.machine.code,
+                  Icons.qr_code,
+                ),
+                const SizedBox(height: AppSizes.paddingSmall),
+                _buildHeaderInfoRow(
+                  'Kurulum Tarihi',
+                  widget.machine.installationDate ?? 'Belirtilmemiş',
+                  Icons.calendar_today,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSizes.paddingLarge),
         ],
@@ -199,17 +246,7 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
               ),
               const SizedBox(width: AppSizes.paddingMedium),
               if (widget.machine.isActive)
-                Expanded(
-                  child: _buildStatusCard(
-                    widget.machine.efficiencyText,
-                    Icons.trending_up,
-                    widget.machine.efficiency >= 90
-                        ? const Color(AppColors.successGreen)
-                        : widget.machine.efficiency >= 70
-                        ? const Color(AppColors.warningOrange)
-                        : const Color(AppColors.errorRed),
-                  ),
-                ),
+                Expanded(child: _buildControlButton()),
             ],
           ),
         ],
@@ -243,6 +280,41 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
     );
   }
 
+  Widget _buildControlButton() {
+    return GestureDetector(
+      onTap: _startControlCheck,
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        decoration: BoxDecoration(
+          color: const Color(AppColors.primaryBlue).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          border: Border.all(
+            color: const Color(AppColors.primaryBlue).withOpacity(0.3),
+          ),
+        ),
+        child: const Column(
+          children: [
+            Icon(
+              Icons.checklist,
+              color: Color(AppColors.primaryBlue),
+              size: AppSizes.iconLarge,
+            ),
+            SizedBox(height: AppSizes.paddingSmall),
+            Text(
+              'Kontrol Yap',
+              style: TextStyle(
+                fontSize: AppSizes.textMedium,
+                fontWeight: FontWeight.bold,
+                color: Color(AppColors.primaryBlue),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDetailsSection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingMedium),
@@ -261,18 +333,160 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Detay Bilgileri',
-            style: TextStyle(
-              fontSize: AppSizes.textLarge,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
+                color: Color(AppColors.primaryBlue),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Makine Bilgileri',
+                style: TextStyle(
+                  fontSize: AppSizes.textLarge,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSizes.paddingMedium),
+
+          // Basic Information
           _buildDetailRow('Makine Kodu', widget.machine.code),
+          _buildDetailRow('Model', widget.machine.model ?? 'Belirtilmemiş'),
+          _buildDetailRow(
+            'Üretici',
+            widget.machine.manufacturer ?? 'Belirtilmemiş',
+          ),
+          _buildDetailRow(
+            'Seri No',
+            widget.machine.serialNumber ?? 'Belirtilmemiş',
+          ),
           _buildDetailRow('Tip', widget.machine.type),
           _buildDetailRow('Lokasyon', widget.machine.location),
-          _buildDetailRow('Durum', widget.machine.statusText),
+          _buildDetailRow(
+            'Departman',
+            widget.machine.department ?? 'Belirtilmemiş',
+          ),
+
+          const Divider(height: 24),
+
+          // Operational Information
+          Row(
+            children: [
+              const Icon(
+                Icons.work_outline,
+                color: Color(AppColors.successGreen),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Operasyonel Bilgiler',
+                style: TextStyle(
+                  fontSize: AppSizes.textMedium,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          _buildDetailRow(
+            'Çalışma Saati',
+            '${widget.machine.operatingHours?.toStringAsFixed(1) ?? '0'} saat',
+          ),
+          _buildDetailRow(
+            'Atanmış Operatör',
+            widget.machine.assignedOperator ?? 'Atanmamış',
+          ),
+          _buildDetailRow(
+            'Maksimum Kapasite',
+            widget.machine.maxCapacity != null
+                ? '${widget.machine.maxCapacity} adet/saat'
+                : 'Belirtilmemiş',
+          ),
+          _buildDetailRow(
+            'Güç Tüketimi',
+            widget.machine.powerConsumption != null
+                ? '${widget.machine.powerConsumption} kW'
+                : 'Belirtilmemiş',
+          ),
+          _buildDetailRow(
+            'Kurulum Tarihi',
+            widget.machine.installationDate ?? 'Belirtilmemiş',
+          ),
+
+          const Divider(height: 24),
+
+          // Status Information
+          Row(
+            children: [
+              const Icon(
+                Icons.analytics_outlined,
+                color: Color(AppColors.warningOrange),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Durum Bilgileri',
+                style: TextStyle(
+                  fontSize: AppSizes.textMedium,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          _buildDetailRow('Mevcut Durum', widget.machine.statusText),
+          _buildDetailRow(
+            'Aktif Durum',
+            widget.machine.isActive ? 'Aktif' : 'Pasif',
+          ),
+          _buildDetailRow(
+            'Otomatik Mod',
+            widget.machine.isAutoMode == true ? 'Açık' : 'Kapalı',
+          ),
+          _buildDetailRow(
+            'Verimlilik',
+            '${(widget.machine.efficiency * 100).toStringAsFixed(1)}%',
+          ),
+
+          if (widget.machine.notes != null &&
+              widget.machine.notes!.isNotEmpty) ...[
+            const Divider(height: 24),
+            Row(
+              children: [
+                const Icon(
+                  Icons.note_outlined,
+                  color: Color(AppColors.grey600),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Notlar',
+                  style: TextStyle(
+                    fontSize: AppSizes.textMedium,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Text(
+                widget.machine.notes!,
+                style: const TextStyle(
+                  fontSize: AppSizes.textSmall,
+                  color: Color(AppColors.grey600),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -558,9 +772,88 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
   }
 
   void _scheduleMaintenance() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Bakım planlama özelliği yakında eklenecek...'),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Bakım Planla'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Makine: ${widget.machine.name}'),
+            const SizedBox(height: 16),
+            const Text('Bakım Türü:'),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'routine', child: Text('Rutin Bakım')),
+                DropdownMenuItem(
+                  value: 'preventive',
+                  child: Text('Önleyici Bakım'),
+                ),
+                DropdownMenuItem(
+                  value: 'corrective',
+                  child: Text('Düzeltici Bakım'),
+                ),
+                DropdownMenuItem(value: 'emergency', child: Text('Acil Bakım')),
+              ],
+              onChanged: (value) {},
+            ),
+            const SizedBox(height: 16),
+            const Text('Planlanan Tarih:'),
+            const SizedBox(height: 8),
+            TextFormField(
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Tarih seçin',
+                suffixIcon: Icon(Icons.calendar_today),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              readOnly: true,
+              onTap: () async {
+                await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now().add(const Duration(days: 7)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                // Tarih seçimi işlemi burada yapılacak
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Bakım başarıyla planlandı'),
+                  backgroundColor: Color(AppColors.successGreen),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(AppColors.primaryBlue),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Planla'),
+          ),
+        ],
       ),
     );
   }
@@ -834,9 +1127,76 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
   }
 
   void _showHistory() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Geçmiş kayıtlar özelliği yakında eklenecek...'),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Makine Geçmişi'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Son Aktiviteler:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                _buildHistoryItem(
+                  'Bakım Tamamlandı',
+                  'Rutin bakım işlemi tamamlandı',
+                  DateTime.now().subtract(const Duration(days: 2)),
+                  Icons.build,
+                  const Color(AppColors.successGreen),
+                ),
+                _buildHistoryItem(
+                  'Kontrol Listesi',
+                  'Haftalık kontrol listesi tamamlandı',
+                  DateTime.now().subtract(const Duration(days: 5)),
+                  Icons.checklist,
+                  const Color(AppColors.primaryBlue),
+                ),
+                _buildHistoryItem(
+                  'Uyarı',
+                  'Sıcaklık limitinin üzerine çıkıldı',
+                  DateTime.now().subtract(const Duration(days: 8)),
+                  Icons.warning,
+                  const Color(AppColors.warningOrange),
+                ),
+                _buildHistoryItem(
+                  'Durum Değişikliği',
+                  'Makine aktif duruma geçti',
+                  DateTime.now().subtract(const Duration(days: 10)),
+                  Icons.play_circle,
+                  const Color(AppColors.successGreen),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Kapat'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Detaylı geçmiş raporu hazırlanıyor...'),
+                  backgroundColor: Color(AppColors.primaryBlue),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(AppColors.primaryBlue),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Detaylı Rapor'),
+          ),
+        ],
       ),
     );
   }
@@ -1142,5 +1502,131 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildHeaderInfoRow(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white70, size: 16),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHistoryItem(
+    String title,
+    String description,
+    DateTime date,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatDate(date),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[500],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _startControlCheck() {
+    // Makine için kontrol listesi oluştur ve başlat
+    final controlList = {
+      'id':
+          'CL_${widget.machine.code}_${DateTime.now().millisecondsSinceEpoch}',
+      'title': '${widget.machine.name} Rutin Kontrol',
+      'machine': widget.machine.name,
+      'machineCode': widget.machine.code,
+      'category': 'Genel',
+      'status': 'pending',
+      'priority': 'Orta',
+      'assignedTo': widget.machine.assignedOperator ?? 'Mevcut Kullanıcı',
+      'dueDate': DateTime.now().add(const Duration(hours: 2)),
+      'description': '${widget.machine.name} için rutin kontrol listesi',
+      'isOverdue': false,
+    };
+
+    // Kontrol listesi detay sayfasına git
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ControlListDetailPage(controlList: controlList),
+      ),
+    ).then((_) {
+      // Kontrol tamamlandıktan sonra makine detaylarını yenile
+      if (mounted) {
+        setState(() {
+          // Makine durumunu güncelle (mock)
+          // Gerçek uygulamada API'den güncel bilgiler alınacak
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kontrol listesi başlatıldı'),
+            backgroundColor: Color(AppColors.primaryBlue),
+          ),
+        );
+      }
+    });
   }
 }

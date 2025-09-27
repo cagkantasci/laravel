@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/scan_history_service.dart';
+import 'scan_history_page.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});
@@ -15,6 +17,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
   bool _isScanning = true;
   bool _hasPermission = false;
   String? _lastScannedCode;
+  final ScanHistoryService _historyService = ScanHistoryService();
 
   @override
   void initState() {
@@ -83,6 +86,15 @@ class _QRScannerPageState extends State<QRScannerPage> {
           _isScanning = false;
           _lastScannedCode = barcode.rawValue;
         });
+
+        // Save to scan history
+        _historyService.addScanResult(
+          scannedCode: barcode.rawValue!,
+          codeType: _determineScanType(barcode.rawValue!),
+          result: _generateScanDescription(barcode.rawValue!),
+          isSuccessful: true,
+        );
+
         _showResultDialog(barcode.rawValue!);
         break;
       }
@@ -229,6 +241,18 @@ class _QRScannerPageState extends State<QRScannerPage> {
         backgroundColor: const Color(AppColors.primaryBlue),
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ScanHistoryPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.history),
+            tooltip: 'Tarama Geçmişi',
+          ),
           if (_hasPermission) ...[
             IconButton(
               onPressed: _toggleFlash,
@@ -381,6 +405,44 @@ class _QRScannerPageState extends State<QRScannerPage> {
         ),
       ),
     );
+  }
+
+  String _determineScanType(String code) {
+    if (code.startsWith('http') || code.startsWith('https')) {
+      return 'URL';
+    } else if (code.contains('@') && code.contains('.')) {
+      return 'Email';
+    } else if (RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(code)) {
+      return 'Telefon';
+    } else if (code.startsWith('WIFI:')) {
+      return 'WiFi';
+    } else if (code.startsWith('MECARD:') || code.startsWith('BEGIN:VCARD')) {
+      return 'Kişi';
+    } else if (code.startsWith('geo:')) {
+      return 'Konum';
+    } else {
+      return 'Metin';
+    }
+  }
+
+  String _generateScanDescription(String code) {
+    final type = _determineScanType(code);
+    switch (type) {
+      case 'URL':
+        return 'Web sitesi: ${code.length > 50 ? '${code.substring(0, 50)}...' : code}';
+      case 'Email':
+        return 'E-posta adresi: $code';
+      case 'Telefon':
+        return 'Telefon numarası: $code';
+      case 'WiFi':
+        return 'WiFi bağlantı bilgisi';
+      case 'Kişi':
+        return 'Kişi bilgisi (vCard)';
+      case 'Konum':
+        return 'Konum bilgisi';
+      default:
+        return 'Metin: ${code.length > 50 ? '${code.substring(0, 50)}...' : code}';
+    }
   }
 }
 

@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'network/api_client.dart';
 import 'services/auth_service.dart';
 import 'services/mock_auth_service.dart';
+import 'services/notification_service.dart';
+import 'services/connectivity_service.dart';
+import 'services/offline_sync_service.dart';
 
 class AppInitializer {
   static final AppInitializer _instance = AppInitializer._internal();
@@ -15,19 +19,29 @@ class AppInitializer {
     if (_isInitialized) return;
 
     try {
+      // Initialize offline services (always needed)
+      await ConnectivityService().initialize();
+      await OfflineSyncService().initialize();
+
       if (useMockServices) {
         // Initialize with mock services for offline testing
         await MockAuthService().init();
+
+        // Initialize notification service
+        NotificationService().initialize();
       } else {
         // Initialize API client for real API
         await ApiClient().init();
         await AuthService().init();
+
+        // Initialize notification service
+        NotificationService().initialize();
       }
 
       _isInitialized = true;
     } catch (e) {
       // Log error but don't throw to prevent app crash
-      print('App initialization error: $e');
+      debugPrint('App initialization error: $e');
       _isInitialized = false;
       rethrow;
     }

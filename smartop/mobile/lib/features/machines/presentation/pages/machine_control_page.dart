@@ -719,7 +719,7 @@ class _MachineControlPageState extends State<MachineControlPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        child: Container(
+        child: SizedBox(
           height: 400,
           child: Column(
             children: [

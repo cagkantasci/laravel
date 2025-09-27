@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/widgets/offline_aware_widget.dart';
 import '../../data/models/machine.dart';
 import '../../data/dummy_machine_data.dart';
 import 'machine_detail_page.dart';
@@ -12,7 +13,7 @@ class MachinesPage extends StatefulWidget {
 }
 
 class _MachinesPageState extends State<MachinesPage>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, OfflineCapableMixin {
   late TabController _tabController;
   List<Machine> _allMachines = [];
   List<Machine> _filteredMachines = [];
@@ -33,11 +34,35 @@ class _MachinesPageState extends State<MachinesPage>
     super.dispose();
   }
 
-  void _loadMachines() {
-    setState(() {
-      _allMachines = DummyMachineData.getMachines();
-      _filteredMachines = _allMachines;
-    });
+  void _loadMachines() async {
+    try {
+      List<Machine> machines;
+
+      if (isConnected) {
+        // Load from API or use dummy data
+        machines = DummyMachineData.getMachines();
+      } else {
+        // Load from offline cache
+        final cachedData = await getCachedMachines();
+        if (cachedData.isNotEmpty) {
+          machines = cachedData.map((data) => Machine.fromJson(data)).toList();
+        } else {
+          // Fallback to dummy data if no cache
+          machines = DummyMachineData.getMachines();
+        }
+      }
+
+      setState(() {
+        _allMachines = machines;
+        _filteredMachines = machines;
+      });
+    } catch (e) {
+      // Fallback to dummy data on error
+      setState(() {
+        _allMachines = DummyMachineData.getMachines();
+        _filteredMachines = _allMachines;
+      });
+    }
   }
 
   void _filterMachines() {
@@ -404,20 +429,63 @@ class _MachinesPageState extends State<MachinesPage>
 
               const SizedBox(height: AppSizes.paddingSmall),
 
-              // Efficiency and Maintenance
+              // Performance Metrics Row
               Row(
                 children: [
-                  if (machine.isActive) ...[
-                    Expanded(
-                      child: _buildInfoItem(
-                        Icons.trending_up,
-                        'Verimlilik: ${machine.efficiencyText}',
-                        machine.efficiency >= 90
-                            ? const Color(AppColors.successGreen)
-                            : machine.efficiency >= 70
-                            ? const Color(AppColors.warningOrange)
-                            : const Color(AppColors.errorRed),
-                      ),
+                  Expanded(
+                    child: _buildPerformanceMetric(
+                      'Verimlilik',
+                      '${(machine.efficiency * 100).toInt()}%',
+                      Icons.trending_up,
+                      _getEfficiencyColor(machine.efficiency),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildPerformanceMetric(
+                      'Duruma',
+                      machine.statusText,
+                      _getStatusIcon(machine.status),
+                      _getStatusColor(machine.status),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildPerformanceMetric(
+                      'Kontrol',
+                      '${machine.controlCompletionRate.toInt()}%',
+                      Icons.checklist,
+                      _getControlColor(machine.controlCompletionRate),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Status Indicators Row
+              Row(
+                children: [
+                  if (machine.needsMaintenance) ...[
+                    _buildStatusBadge(
+                      'Bakım Gerekli',
+                      Icons.build,
+                      const Color(AppColors.warningOrange),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (machine.controlCompletionRate < 50) ...[
+                    _buildStatusBadge(
+                      'Kontrol Gerekli',
+                      Icons.warning,
+                      const Color(AppColors.errorRed),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (machine.isActive && machine.efficiency > 0.9) ...[
+                    _buildStatusBadge(
+                      'Yüksek Performans',
+                      Icons.star,
+                      const Color(AppColors.successGreen),
                     ),
                   ],
                   if (machine.needsMaintenance) ...[
@@ -533,5 +601,100 @@ class _MachinesPageState extends State<MachinesPage>
         ),
       ],
     );
+  }
+
+  Widget _buildPerformanceMetric(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String label, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getEfficiencyColor(double efficiency) {
+    if (efficiency >= 0.9) return const Color(AppColors.successGreen);
+    if (efficiency >= 0.7) return const Color(AppColors.warningOrange);
+    return const Color(AppColors.errorRed);
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'active':
+        return const Color(AppColors.successGreen);
+      case 'maintenance':
+        return const Color(AppColors.warningOrange);
+      case 'inactive':
+        return const Color(AppColors.grey500);
+      default:
+        return const Color(AppColors.grey500);
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'active':
+        return Icons.play_circle;
+      case 'maintenance':
+        return Icons.build;
+      case 'inactive':
+        return Icons.pause_circle;
+      default:
+        return Icons.help;
+    }
+  }
+
+  Color _getControlColor(double completionRate) {
+    if (completionRate >= 80) return const Color(AppColors.successGreen);
+    if (completionRate >= 50) return const Color(AppColors.warningOrange);
+    return const Color(AppColors.errorRed);
   }
 }

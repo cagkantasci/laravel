@@ -17,6 +17,19 @@ class Machine {
   final String? lastControlBy;
   final double controlCompletionRate;
 
+  // New fields for enhanced machine info
+  final String? model;
+  final String? manufacturer;
+  final String? serialNumber;
+  final String? installationDate;
+  final double? operatingHours;
+  final double? maxCapacity;
+  final double? powerConsumption;
+  final String? assignedOperator;
+  final String? department;
+  final String? notes;
+  final bool? isAutoMode;
+
   const Machine({
     required this.id,
     required this.code,
@@ -33,6 +46,17 @@ class Machine {
     this.lastControlDate,
     this.lastControlBy,
     this.controlCompletionRate = 0.0,
+    this.model,
+    this.manufacturer,
+    this.serialNumber,
+    this.installationDate,
+    this.operatingHours,
+    this.maxCapacity,
+    this.powerConsumption,
+    this.assignedOperator,
+    this.department,
+    this.notes,
+    this.isAutoMode,
   });
 
   factory Machine.fromJson(Map<String, dynamic> json) {

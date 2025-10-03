@@ -2,30 +2,30 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class ControlTemplate extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
         'company_id',
         'name',
         'description',
-        'category',
-        'machine_types',
-        'template_items',
-        'estimated_duration',
+        'machine_type',
+        'control_items',
+        'is_default',
         'is_active',
         'created_by',
     ];
 
     protected $casts = [
-        'machine_types' => 'array',
-        'template_items' => 'array',
+        'control_items' => 'array',
+        'is_default' => 'boolean',
         'is_active' => 'boolean',
     ];
 
@@ -74,14 +74,14 @@ class ControlTemplate extends Model
         return $query->where('is_active', true);
     }
 
-    public function scopeByCategory($query, $category)
-    {
-        return $query->where('category', $category);
-    }
-
     public function scopeByMachineType($query, $machineType)
     {
-        return $query->whereJsonContains('machine_types', $machineType);
+        return $query->where('machine_type', $machineType);
+    }
+
+    public function scopeDefault($query)
+    {
+        return $query->where('is_default', true);
     }
 
     /**
@@ -94,7 +94,7 @@ class ControlTemplate extends Model
 
     public function getItemsCountAttribute()
     {
-        return is_array($this->template_items) ? count($this->template_items) : 0;
+        return is_array($this->control_items) ? count($this->control_items) : 0;
     }
 
     public function createControlList($machineId, $userId, $scheduledDate = null)
@@ -106,7 +106,7 @@ class ControlTemplate extends Model
             'user_id' => $userId,
             'title' => $this->name,
             'description' => $this->description,
-            'control_items' => $this->template_items,
+            'control_items' => $this->control_items,
             'status' => 'pending',
             'priority' => 'medium',
             'scheduled_date' => $scheduledDate ?? now(),

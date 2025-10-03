@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer:*)",
+      "Bash(php artisan test:*)",
+      "Bash(php artisan migrate:status)",
+      "Bash(php artisan migrate)",
+      "Bash(php artisan serve:*)",
+      "Bash(curl -X GET http://localhost:8000/api/health -H \"Accept: application/json\")",
+      "Bash(flutter test:*)",
+      "Bash(flutter pub add:*)",
+      "Bash(flutter packages pub run:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter build:*)",
+      "Bash(docker:*)",
+      "Bash(php artisan make:factory:*)",
+      "Bash(find:*)",
+      "Bash(php artisan migrate:fresh:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(flutter clean:*)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter:*)",
+      "Bash(curl -X GET http://127.0.0.1:8001/api/health -H \"Accept: application/json\")",
+      "Bash(npm uninstall:*)",
+      "Bash(curl -X POST http://127.0.0.1:8001/api/login -H \"Content-Type: application/json\" -H \"Accept: application/json\" -d '{\"\"email\"\":\"\"admin@smartop.com\"\",\"\"password\"\":\"\"password\"\"}')",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(start ms-settings:developers)",
+      "Bash(curl:*)",
+      "Bash(php artisan make:controller:*)",
+      "Bash(php artisan make:mail:*)",
+      "Bash(php artisan make:seeder:*)",
+      "Bash(php artisan:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

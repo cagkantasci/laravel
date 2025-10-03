@@ -21,12 +21,7 @@ class CompanyMiddleware
 
         $user = auth()->user();
 
-        // Admin users can access all companies
-        if ($user->hasRole('admin')) {
-            return $next($request);
-        }
-
-        // Check if user has a company assigned
+        // Check if user has a company assigned (even admins need a company)
         if (!$user->company_id) {
             return response()->json([
                 'error' => 'Kullanıcının bir şirketi bulunmamaktadır.'
@@ -34,6 +29,7 @@ class CompanyMiddleware
         }
 
         // Add company filter to the request for multi-tenant queries
+        // Admin users will have access to all companies in controller logic
         $request->merge(['user_company_id' => $user->company_id]);
 
         return $next($request);

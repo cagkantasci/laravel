@@ -163,4 +163,56 @@ class PermissionService {
 
     return false;
   }
+
+  // Control List Permissions
+
+  /// Check if user can create control lists
+  bool canCreateControlList(String userRole) {
+    return ['admin', 'manager'].contains(userRole);
+  }
+
+  /// Check if user can view all control lists
+  bool canViewAllControlLists(String userRole) {
+    return ['admin', 'manager'].contains(userRole);
+  }
+
+  /// Check if user can edit control lists
+  bool canEditControlList(String userRole) {
+    return ['admin', 'manager'].contains(userRole);
+  }
+
+  /// Check if user can delete control lists
+  bool canDeleteControlList(String userRole) {
+    return ['admin', 'manager'].contains(userRole);
+  }
+
+  /// Check if user can approve/reject control lists
+  bool canApproveControlList(String userRole) {
+    return ['admin', 'manager'].contains(userRole);
+  }
+
+  /// Check if user can revert control list approvals
+  bool canRevertControlList(String userRole) {
+    return ['admin', 'manager'].contains(userRole);
+  }
+
+  /// Check if user can start control lists (operators only for assigned lists)
+  bool canStartControlList(String userRole) {
+    return ['admin', 'operator'].contains(userRole);
+  }
+
+  /// Check if user can complete control lists (operators only for assigned lists)
+  bool canCompleteControlList(String userRole) {
+    return ['admin', 'operator'].contains(userRole);
+  }
+
+  /// Check if user can update control list items (operators only for assigned lists)
+  bool canUpdateControlItems(String userRole) {
+    return ['admin', 'operator'].contains(userRole);
+  }
+
+  /// Check if operator can view only their assigned control lists
+  bool shouldViewOnlyAssigned(String userRole) {
+    return userRole == 'operator';
+  }
 }

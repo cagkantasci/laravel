@@ -49,6 +49,10 @@ class DummyMachineData {
         nextMaintenanceDate: now.add(const Duration(days: 82)),
         efficiency: 0.873,
         imageUrl: 'https://via.placeholder.com/300x200?text=Kaynak+Makinasi',
+        controlItems: _getWeldingControlItems(),
+        lastControlDate: now.subtract(const Duration(hours: 12)),
+        lastControlBy: 'Mehmet Demir',
+        controlCompletionRate: 60.0,
         // New fields
         model: 'WM-400',
         manufacturer: 'LINCOLN',
@@ -101,6 +105,10 @@ class DummyMachineData {
         nextMaintenanceDate: now.add(const Duration(days: 5)), // Yakında bakım
         efficiency: 89.7,
         imageUrl: 'https://via.placeholder.com/300x200?text=Pres+Makinasi',
+        controlItems: _getPressControlItems(),
+        lastControlDate: now.subtract(const Duration(days: 1)),
+        lastControlBy: 'Ali Özkan',
+        controlCompletionRate: 75.0,
       ),
       Machine(
         id: '5',
@@ -129,6 +137,10 @@ class DummyMachineData {
         nextMaintenanceDate: now.add(const Duration(days: 60)),
         efficiency: 94.2,
         imageUrl: 'https://via.placeholder.com/300x200?text=Matkap+Tezgahi',
+        controlItems: _getGeneralControlItems(),
+        lastControlDate: now.subtract(const Duration(hours: 24)),
+        lastControlBy: 'Zeynep Arslan',
+        controlCompletionRate: 100.0,
       ),
       Machine(
         id: '7',
@@ -274,6 +286,154 @@ class DummyMachineData {
         unit: 'dB',
         minValue: '50',
         maxValue: '85',
+      ),
+    ];
+  }
+
+  static List<ControlItem> _getWeldingControlItems() {
+    final now = DateTime.now();
+    return [
+      ControlItem(
+        id: '1',
+        title: 'Gaz Bağlantı Kontrolü',
+        description: 'Gaz hortumu ve bağlantı kontrolü',
+        type: 'safety',
+        isRequired: true,
+        status: 'completed',
+        result: 'pass',
+        completedDate: now.subtract(const Duration(hours: 12)),
+        completedBy: 'Mehmet Demir',
+      ),
+      ControlItem(
+        id: '2',
+        title: 'Elektrot Kontrolü',
+        description: 'Elektrot tutucu ve kabloların durumu',
+        type: 'visual',
+        isRequired: true,
+        status: 'completed',
+        result: 'pass',
+        completedDate: now.subtract(const Duration(hours: 12)),
+        completedBy: 'Mehmet Demir',
+      ),
+      ControlItem(
+        id: '3',
+        title: 'Soğutma Sistemi',
+        description: 'Su soğutma sistemi kontrolü',
+        type: 'function',
+        isRequired: true,
+        status: 'completed',
+        result: 'pass',
+        completedDate: now.subtract(const Duration(hours: 12)),
+        completedBy: 'Mehmet Demir',
+      ),
+      ControlItem(
+        id: '4',
+        title: 'Akım Ayar Kontrolü',
+        description: 'Kaynak akımı ayar ve ölçüm kontrolü',
+        type: 'measurement',
+        isRequired: true,
+        status: 'pending',
+        unit: 'A',
+        minValue: '80',
+        maxValue: '400',
+      ),
+      ControlItem(
+        id: '5',
+        title: 'Topraklama Kontrolü',
+        description: 'Topraklama kablosu ve bağlantı kontrolü',
+        type: 'safety',
+        isRequired: true,
+        status: 'pending',
+      ),
+    ];
+  }
+
+  static List<ControlItem> _getPressControlItems() {
+    final now = DateTime.now();
+    return [
+      ControlItem(
+        id: '1',
+        title: 'Hidrolik Basınç Kontrolü',
+        description: 'Sistem basınç seviyesi ölçümü',
+        type: 'measurement',
+        isRequired: true,
+        status: 'completed',
+        result: 'pass',
+        value: '180',
+        unit: 'bar',
+        minValue: '150',
+        maxValue: '200',
+        completedDate: now.subtract(const Duration(days: 1)),
+        completedBy: 'Ali Özkan',
+      ),
+      ControlItem(
+        id: '2',
+        title: 'Hidrolik Yağ Seviyesi',
+        description: 'Hidrolik yağ seviye ve renk kontrolü',
+        type: 'visual',
+        isRequired: true,
+        status: 'completed',
+        result: 'pass',
+        completedDate: now.subtract(const Duration(days: 1)),
+        completedBy: 'Ali Özkan',
+      ),
+      ControlItem(
+        id: '3',
+        title: 'Güvenlik Sensörleri',
+        description: 'İki el kumanda ve ışık bariyeri kontrolü',
+        type: 'safety',
+        isRequired: true,
+        status: 'completed',
+        result: 'pass',
+        completedDate: now.subtract(const Duration(days: 1)),
+        completedBy: 'Ali Özkan',
+      ),
+      ControlItem(
+        id: '4',
+        title: 'Kalıp Merkezleme',
+        description: 'Üst ve alt kalıp hizalama kontrolü',
+        type: 'function',
+        isRequired: true,
+        status: 'pending',
+      ),
+    ];
+  }
+
+  static List<ControlItem> _getGeneralControlItems() {
+    final now = DateTime.now();
+    return [
+      ControlItem(
+        id: '1',
+        title: 'Genel Görsel Kontrol',
+        description: 'Makine dış görünüm ve temizlik kontrolü',
+        type: 'visual',
+        isRequired: true,
+        status: 'completed',
+        result: 'pass',
+        completedDate: now.subtract(const Duration(hours: 24)),
+        completedBy: 'Zeynep Arslan',
+      ),
+      ControlItem(
+        id: '2',
+        title: 'Güvenlik Kontrolü',
+        description: 'Acil stop ve güvenlik sistemleri kontrolü',
+        type: 'safety',
+        isRequired: true,
+        status: 'completed',
+        result: 'pass',
+        completedDate: now.subtract(const Duration(hours: 24)),
+        completedBy: 'Zeynep Arslan',
+      ),
+      ControlItem(
+        id: '3',
+        title: 'Fonksiyon Testi',
+        description: 'Temel fonksiyonların çalışma kontrolü',
+        type: 'function',
+        isRequired: true,
+        status: 'completed',
+        result: 'pass',
+        completedDate: now.subtract(const Duration(hours: 24)),
+        completedBy: 'Zeynep Arslan',
       ),
     ];
   }

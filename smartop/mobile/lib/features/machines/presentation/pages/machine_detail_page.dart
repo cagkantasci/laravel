@@ -6,6 +6,8 @@ import 'machine_control_page.dart';
 import 'add_control_item_page.dart';
 import 'machine_edit_page.dart';
 import '../../../control_lists/presentation/pages/control_list_detail_page.dart';
+import '../../../qr_scanner/presentation/pages/qr_scanner_page.dart';
+import '../../../work_session/presentation/pages/start_work_session_page.dart';
 
 class MachineDetailPage extends StatefulWidget {
   final Machine machine;
@@ -108,7 +110,12 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
       floatingActionButton: widget.machine.isActive
           ? FloatingActionButton.extended(
               onPressed: () {
-                Navigator.of(context).pushNamed(AppRoutes.qrScanner);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const QRScannerPage(),
+                  ),
+                );
               },
               icon: const Icon(Icons.qr_code_scanner),
               label: const Text('QR Tara'),
@@ -210,6 +217,9 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
   }
 
   Widget _buildStatusSection() {
+    final userRole = MockAuthService.getCurrentUserRole();
+    final isOperator = userRole == 'operator';
+
     return Container(
       margin: const EdgeInsets.all(AppSizes.paddingMedium),
       padding: const EdgeInsets.all(AppSizes.paddingLarge),
@@ -245,8 +255,10 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
                 ),
               ),
               const SizedBox(width: AppSizes.paddingMedium),
-              if (widget.machine.isActive)
+              if (widget.machine.isActive && !isOperator)
                 Expanded(child: _buildControlButton()),
+              if (widget.machine.isActive && isOperator)
+                Expanded(child: _buildStartWorkButton()),
             ],
           ),
         ],
@@ -306,6 +318,41 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
                 fontSize: AppSizes.textMedium,
                 fontWeight: FontWeight.bold,
                 color: Color(AppColors.primaryBlue),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStartWorkButton() {
+    return GestureDetector(
+      onTap: _startWorkSession,
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        decoration: BoxDecoration(
+          color: const Color(AppColors.successGreen).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          border: Border.all(
+            color: const Color(AppColors.successGreen).withOpacity(0.3),
+          ),
+        ),
+        child: const Column(
+          children: [
+            Icon(
+              Icons.play_arrow,
+              color: Color(AppColors.successGreen),
+              size: AppSizes.iconLarge,
+            ),
+            SizedBox(height: AppSizes.paddingSmall),
+            Text(
+              'Çalışma Başlat',
+              style: TextStyle(
+                fontSize: AppSizes.textMedium,
+                fontWeight: FontWeight.bold,
+                color: Color(AppColors.successGreen),
               ),
               textAlign: TextAlign.center,
             ),
@@ -1628,5 +1675,39 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
         );
       }
     });
+  }
+
+  void _startWorkSession() async {
+    // Makine için çalışma seansı başlatma sayfasına git
+    final machineId = int.tryParse(widget.machine.id);
+    if (machineId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Geçersiz makine ID'),
+          backgroundColor: Color(AppColors.errorRed),
+        ),
+      );
+      return;
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StartWorkSessionPage(
+          machineId: machineId,
+          machineName: widget.machine.name,
+          controlListId: null, // TODO: Kontrol listesi seçimi eklenebilir
+        ),
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Çalışma seansı başarıyla başlatıldı'),
+          backgroundColor: Color(AppColors.successGreen),
+        ),
+      );
+    }
   }
 }

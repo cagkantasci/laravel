@@ -13,7 +13,7 @@ class CompanyPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('companies.view');
+        return $user->can('view_companies');
     }
 
     /**
@@ -26,7 +26,7 @@ class CompanyPolicy
         }
 
         // Users can only view their own company
-        return $user->company_id === $company->id && $user->can('companies.view');
+        return $user->company_id === $company->id && $user->can('view_companies');
     }
 
     /**
@@ -34,7 +34,7 @@ class CompanyPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('companies.create');
+        return $user->can('create_companies');
     }
 
     /**
@@ -43,11 +43,11 @@ class CompanyPolicy
     public function update(User $user, Company $company): bool
     {
         if ($user->hasRole('admin')) {
-            return $user->can('companies.update');
+            return $user->can('edit_companies');
         }
 
         // Users can only update their own company
-        return $user->company_id === $company->id && $user->can('companies.update');
+        return $user->company_id === $company->id && $user->can('edit_companies');
     }
 
     /**
@@ -56,7 +56,7 @@ class CompanyPolicy
     public function delete(User $user, Company $company): bool
     {
         // Only admin can delete companies
-        return $user->hasRole('admin') && $user->can('companies.delete');
+        return $user->hasRole('admin') && $user->can('delete_companies');
     }
 
     /**
@@ -72,6 +72,6 @@ class CompanyPolicy
      */
     public function forceDelete(User $user, Company $company): bool
     {
-        return $user->hasRole('admin') && $user->can('companies.delete');
+        return $user->hasRole('admin') && $user->can('delete_companies');
     }
 }

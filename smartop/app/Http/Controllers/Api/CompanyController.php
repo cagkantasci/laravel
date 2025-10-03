@@ -13,11 +13,12 @@ class CompanyController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-        $this->middleware('company')->except(['show']); // Public company info might be needed
-    }
+    // Middleware artık route tanımında yapılıyor (Laravel 11)
+    // public function __construct()
+    // {
+    //     $this->middleware('auth:sanctum');
+    //     $this->middleware('company')->except(['show']);
+    // }
 
     /**
      * Display a listing of the resource.

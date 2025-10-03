@@ -13,7 +13,7 @@ class ControlListPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('control-lists.view');
+        return $user->can('view_control_lists');
     }
 
     /**
@@ -26,7 +26,7 @@ class ControlListPolicy
         }
 
         // Users can only view control lists from their company
-        return $user->company_id === $controlList->company_id && $user->can('control-lists.view');
+        return $user->company_id === $controlList->company_id && $user->can('view_control_lists');
     }
 
     /**
@@ -34,7 +34,7 @@ class ControlListPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('control-lists.create');
+        return $user->can('create_control_lists');
     }
 
     /**
@@ -43,13 +43,13 @@ class ControlListPolicy
     public function update(User $user, ControlList $controlList): bool
     {
         if ($user->hasRole('admin')) {
-            return $user->can('control-lists.update');
+            return $user->can('edit_control_lists');
         }
 
         // Only the creator or managers from the same company can update
         return ($user->id === $controlList->user_id || $user->hasRole('manager')) &&
-               $user->company_id === $controlList->company_id && 
-               $user->can('control-lists.update');
+               $user->company_id === $controlList->company_id &&
+               $user->can('edit_control_lists');
     }
 
     /**
@@ -58,13 +58,13 @@ class ControlListPolicy
     public function delete(User $user, ControlList $controlList): bool
     {
         if ($user->hasRole('admin')) {
-            return $user->can('control-lists.delete');
+            return $user->can('delete_control_lists');
         }
 
         // Only managers from the same company can delete (not operators)
         return $user->hasRole('manager') &&
-               $user->company_id === $controlList->company_id && 
-               $user->can('control-lists.delete');
+               $user->company_id === $controlList->company_id &&
+               $user->can('delete_control_lists');
     }
 
     /**
@@ -73,13 +73,13 @@ class ControlListPolicy
     public function approve(User $user, ControlList $controlList): bool
     {
         if ($user->hasRole('admin')) {
-            return $user->can('control-lists.approve');
+            return $user->can('approve_control_lists');
         }
 
         // Only managers from the same company can approve
         return $user->hasRole('manager') &&
-               $user->company_id === $controlList->company_id && 
-               $user->can('control-lists.approve') &&
+               $user->company_id === $controlList->company_id &&
+               $user->can('approve_control_lists') &&
                $controlList->canBeApproved();
     }
 
@@ -89,13 +89,28 @@ class ControlListPolicy
     public function reject(User $user, ControlList $controlList): bool
     {
         if ($user->hasRole('admin')) {
-            return $user->can('control-lists.reject');
+            return $user->can('reject_control_lists');
         }
 
         // Only managers from the same company can reject
         return $user->hasRole('manager') &&
-               $user->company_id === $controlList->company_id && 
-               $user->can('control-lists.reject');
+               $user->company_id === $controlList->company_id &&
+               $user->can('reject_control_lists');
+    }
+
+    /**
+     * Determine whether the user can revert approval/rejection.
+     */
+    public function revert(User $user, ControlList $controlList): bool
+    {
+        if ($user->hasRole('admin')) {
+            return $user->can('approve_control_lists');
+        }
+
+        // Only managers from the same company can revert
+        return $user->hasRole('manager') &&
+               $user->company_id === $controlList->company_id &&
+               $user->can('approve_control_lists');
     }
 
     /**
@@ -111,6 +126,57 @@ class ControlListPolicy
      */
     public function forceDelete(User $user, ControlList $controlList): bool
     {
-        return $user->hasRole('admin') && $user->can('control-lists.delete');
+        return $user->hasRole('admin') && $user->can('delete_control_lists');
+    }
+
+    /**
+     * Determine whether the user can start the control list.
+     * Only operators assigned to the control list can start it.
+     */
+    public function start(User $user, ControlList $controlList): bool
+    {
+        // Admin can start any control list
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        // Only the assigned user (operator) can start the control list
+        return $user->id === $controlList->user_id &&
+               $user->company_id === $controlList->company_id &&
+               $controlList->status === 'pending';
+    }
+
+    /**
+     * Determine whether the user can complete the control list.
+     * Only operators assigned to the control list can complete it.
+     */
+    public function complete(User $user, ControlList $controlList): bool
+    {
+        // Admin can complete any control list
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        // Only the assigned user (operator) can complete the control list
+        return $user->id === $controlList->user_id &&
+               $user->company_id === $controlList->company_id &&
+               in_array($controlList->status, ['pending', 'in_progress']);
+    }
+
+    /**
+     * Determine whether the user can update control list items.
+     * Only operators assigned to the control list can update items.
+     */
+    public function updateItems(User $user, ControlList $controlList): bool
+    {
+        // Admin can update any control list items
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        // Only the assigned user (operator) can update items
+        return $user->id === $controlList->user_id &&
+               $user->company_id === $controlList->company_id &&
+               in_array($controlList->status, ['pending', 'in_progress']);
     }
 }

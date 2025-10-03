@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/connectivity_service.dart';
 import '../services/offline_sync_service.dart';
@@ -22,6 +23,10 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
   bool _isSyncing = false;
   int _pendingActionsCount = 0;
 
+  // Stream subscriptions
+  StreamSubscription? _connectivitySubscription;
+  StreamSubscription? _syncStatusSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +47,8 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
 
   @override
   void dispose() {
+    _connectivitySubscription?.cancel();
+    _syncStatusSubscription?.cancel();
     _animationController.dispose();
     super.dispose();
   }
@@ -54,14 +61,16 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
   }
 
   void _listenToConnectivity() {
-    _connectivityService.connectionStream.listen((isConnected) {
+    _connectivitySubscription = _connectivityService.connectionStream.listen((isConnected) {
+      if (!mounted) return;
+
       setState(() {
         _isConnected = isConnected;
       });
 
       if (isConnected) {
         _animationController.forward().then((_) {
-          _animationController.reverse();
+          if (mounted) _animationController.reverse();
         });
       }
 
@@ -70,7 +79,9 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
   }
 
   void _listenToSyncStatus() {
-    _syncService.syncStatusStream.listen((status) {
+    _syncStatusSubscription = _syncService.syncStatusStream.listen((status) {
+      if (!mounted) return;
+
       setState(() {
         _isSyncing = status == SyncStatus.syncing;
       });
@@ -83,6 +94,8 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
 
   Future<void> _updateSyncInfo() async {
     final syncInfo = await _syncService.getSyncInfo();
+    if (!mounted) return;
+
     setState(() {
       _pendingActionsCount = syncInfo['pendingActionsCount'] ?? 0;
     });

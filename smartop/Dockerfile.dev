@@ -1,0 +1,57 @@
+# Laravel Development Dockerfile
+FROM php:8.2-fpm
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    supervisor \
+    nginx \
+    redis-tools \
+    nodejs \
+    npm \
+    && docker-php-ext-configure gd \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+
+# Install Xdebug for development
+RUN pecl install xdebug redis \
+    && docker-php-ext-enable xdebug redis
+
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copy Xdebug configuration
+COPY docker/php/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
+
+# Copy PHP development configuration
+COPY docker/php/php-dev.ini /usr/local/etc/php/conf.d/custom.ini
+
+# Copy nginx configuration for development
+COPY docker/nginx/dev.conf /etc/nginx/sites-available/default
+
+# Copy supervisor configuration for development
+COPY docker/supervisor/supervisord-dev.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Copy environment file for development
+COPY .env.example .env
+
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html
+
+# Expose port
+EXPOSE 80
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

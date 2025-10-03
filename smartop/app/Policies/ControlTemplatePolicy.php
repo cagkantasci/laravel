@@ -13,7 +13,7 @@ class ControlTemplatePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('control-templates.view');
+        return $user->can('view_control_templates');
     }
 
     /**
@@ -26,7 +26,7 @@ class ControlTemplatePolicy
         }
 
         // Users can only view templates from their company
-        return $user->company_id === $controlTemplate->company_id && $user->can('control-templates.view');
+        return $user->company_id === $controlTemplate->company_id && $user->can('view_control_templates');
     }
 
     /**
@@ -34,7 +34,7 @@ class ControlTemplatePolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('control-templates.create');
+        return $user->can('create_control_templates');
     }
 
     /**
@@ -43,13 +43,13 @@ class ControlTemplatePolicy
     public function update(User $user, ControlTemplate $controlTemplate): bool
     {
         if ($user->hasRole('admin')) {
-            return $user->can('control-templates.update');
+            return $user->can('edit_control_templates');
         }
 
         // Managers from the same company can update
         return $user->hasRole('manager') &&
-               $user->company_id === $controlTemplate->company_id && 
-               $user->can('control-templates.update');
+               $user->company_id === $controlTemplate->company_id &&
+               $user->can('edit_control_templates');
     }
 
     /**
@@ -57,7 +57,14 @@ class ControlTemplatePolicy
      */
     public function delete(User $user, ControlTemplate $controlTemplate): bool
     {
-        return false;
+        if ($user->hasRole('admin')) {
+            return $user->can('delete_control_templates');
+        }
+
+        // Managers from the same company can delete
+        return $user->hasRole('manager') &&
+               $user->company_id === $controlTemplate->company_id &&
+               $user->can('delete_control_templates');
     }
 
     /**

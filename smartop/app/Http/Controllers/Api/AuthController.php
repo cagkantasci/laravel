@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -15,88 +18,143 @@ class AuthController extends Controller
     /**
      * Register a new user
      */
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'phone' => 'nullable|string|max:20',
-            'company_id' => 'nullable|exists:companies,id',
-        ]);
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'phone' => $request->phone,
+                'identity_number' => $request->identity_number,
+                'birth_date' => $request->birth_date,
+                'gender' => $request->gender,
+                'company_id' => $request->company_id,
+                'status' => 'active',
+            ]);
 
-        if ($validator->fails()) {
+            // Assign default role
+            $user->assignRole('operator');
+
+            // Log registration
+            Log::info('User registered', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'ip' => $request->ip()
+            ]);
+
+            $token = $user->createToken('SmartOp API Token', ['*'], now()->addDays(30))->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User registered successfully',
+                'data' => [
+                    'user' => $user->load('roles', 'company'),
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                    'expires_at' => now()->addDays(30)->toISOString(),
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Registration failed', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Validation errors',
-                'errors' => $validator->errors()
-            ], 422);
+                'message' => 'Registration failed. Please try again.',
+                'errors' => null,
+                'data' => null
+            ], 500);
         }
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'phone' => $request->phone,
-            'company_id' => $request->company_id,
-            'status' => 'active',
-        ]);
-
-        // Assign default role
-        $user->assignRole('operator'); // Default role
-
-        $token = $user->createToken('SmartOp API Token')->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User registered successfully',
-            'data' => [
-                'user' => $user->load('roles', 'company'),
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ]
-        ], 201);
     }
 
     /**
      * Login user
      */
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+        $email = $request->email;
+        $ip = $request->ip();
+        $key = 'login_attempts:' . $ip . ':' . $email;
 
-        if ($validator->fails()) {
+        // Check for too many failed attempts
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+
+            Log::warning('Login rate limit exceeded', [
+                'email' => $email,
+                'ip' => $ip,
+                'retry_after' => $seconds
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Validation errors',
-                'errors' => $validator->errors()
-            ], 422);
+                'message' => 'Too many login attempts. Please try again later.',
+                'errors' => ['email' => 'Rate limit exceeded'],
+                'retry_after' => $seconds,
+                'data' => null
+            ], 429);
         }
 
         if (!Auth::attempt($request->only('email', 'password'))) {
+            // Increment failed attempts
+            RateLimiter::hit($key, 900); // 15 minutes lockout
+
+            Log::warning('Failed login attempt', [
+                'email' => $email,
+                'ip' => $ip
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid login credentials'
+                'message' => 'Invalid login credentials',
+                'errors' => ['email' => 'Invalid credentials'],
+                'data' => null
             ], 401);
         }
 
         $user = Auth::user();
-        
+
         // Check if user is active
         if ($user->status !== 'active') {
+            Log::warning('Login attempt with inactive account', [
+                'user_id' => $user->id,
+                'email' => $email,
+                'status' => $user->status,
+                'ip' => $ip
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Account is not active'
+                'message' => 'Account is not active',
+                'errors' => ['account' => 'Account not active'],
+                'data' => null
             ], 403);
         }
+
+        // Clear failed attempts on successful login
+        RateLimiter::clear($key);
 
         // Update last login
         $user->updateLastLogin();
 
-        $token = $user->createToken('SmartOp API Token')->plainTextToken;
+        // Log successful login
+        Log::info('User logged in', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'ip' => $ip
+        ]);
+
+        // Revoke old tokens if requested
+        if ($request->remember_me !== true) {
+            $user->tokens()->delete();
+        }
+
+        $token = $user->createToken('SmartOp API Token', ['*'], now()->addDays(30))->plainTextToken;
 
         return response()->json([
             'success' => true,
@@ -105,6 +163,7 @@ class AuthController extends Controller
                 'user' => $user->load('roles', 'company'),
                 'token' => $token,
                 'token_type' => 'Bearer',
+                'expires_at' => now()->addDays(30)->toISOString(),
             ]
         ]);
     }

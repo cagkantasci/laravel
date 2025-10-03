@@ -15,8 +15,7 @@ class DashboardController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum');
-        $this->middleware('company');
+        // Middleware handled by route groups
     }
 
     /**
@@ -252,7 +251,7 @@ class DashboardController extends Controller
             ->select('machine_id',
                 DB::raw('count(*) as total_controls'),
                 DB::raw('count(case when status = "completed" then 1 end) as completed_controls'),
-                DB::raw('avg(case when completed_date is not null and scheduled_date is not null then timestampdiff(hour, scheduled_date, completed_date) end) as avg_completion_time')
+                DB::raw('avg(case when completed_date is not null and scheduled_date is not null then (julianday(completed_date) - julianday(scheduled_date)) * 24 end) as avg_completion_time')
             )
             ->groupBy('machine_id')
             ->having('total_controls', '>', 0)

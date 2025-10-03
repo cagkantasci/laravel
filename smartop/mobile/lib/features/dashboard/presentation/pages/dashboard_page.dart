@@ -11,7 +11,8 @@ import '../../../work_tasks/presentation/pages/work_tasks_list_page.dart';
 import '../../../qr_scanner/presentation/pages/qr_scanner_page.dart';
 import '../../../user_management/presentation/pages/user_management_page.dart';
 import '../../../reports/presentation/pages/reports_page.dart';
-import '../../../profile/presentation/pages/profile_page.dart';
+import '../../../work_session/presentation/pages/active_work_session_page.dart';
+import '../../../work_session/presentation/pages/work_sessions_history_page.dart';
 import '../../../../core/widgets/offline_indicator.dart';
 
 import '../widgets/dashboard_stats_widget.dart';
@@ -28,6 +29,19 @@ class _DashboardPageState extends State<DashboardPage> {
   final PermissionService _permissionService = PermissionService();
 
   List<Widget> _getPages() {
+    final user = MockAuthService.getCurrentUser();
+    final userRole = user?.role ?? 'operator';
+
+    // Operator için dashboard olmadan
+    if (userRole == 'operator') {
+      return [
+        const MachinesPage(),
+        const ControlListsPage(),
+        const ProfilePage(),
+      ];
+    }
+
+    // Admin ve Manager için dashboard dahil
     return [
       const DashboardHome(),
       const MachinesPage(),
@@ -37,26 +51,28 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   List<BottomNavigationBarItem> _getNavigationItems() {
-    // Tüm kullanıcılar için temel navigation items
-    List<BottomNavigationBarItem> items = [
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.dashboard),
-        label: 'Dashboard',
-      ),
-    ];
-
-    // Makine yönetimi - Sadece admin ve manager
     final user = MockAuthService.getCurrentUser();
     final userRole = user?.role ?? 'operator';
 
-    if (_permissionService.hasPermission(userRole, 'reports')) {
+    List<BottomNavigationBarItem> items = [];
+
+    // Dashboard - Sadece admin ve manager
+    if (userRole != 'operator') {
       items.add(
         const BottomNavigationBarItem(
-          icon: Icon(Icons.precision_manufacturing),
-          label: 'Makineler',
+          icon: Icon(Icons.dashboard),
+          label: 'Dashboard',
         ),
       );
     }
+
+    // Makineler - Tüm roller
+    items.add(
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.precision_manufacturing),
+        label: 'Makineler',
+      ),
+    );
 
     // Kontrol listeleri - Tüm roller
     items.add(
@@ -256,11 +272,149 @@ class _DashboardHomeState extends State<DashboardHome> {
 
               const SizedBox(height: AppSizes.paddingLarge),
 
+              // Work Session Card (for operators)
+              _buildWorkSessionCard(),
+
+              const SizedBox(height: AppSizes.paddingLarge),
+
               // Yapılacak İşler
               _buildWorkTasks(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildWorkSessionCard() {
+    final userRole = MockAuthService.getCurrentUserRole();
+
+    // Only show for operators
+    if (userRole != 'operator') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingMedium),
+      padding: const EdgeInsets.all(AppSizes.paddingLarge),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.green.shade400,
+            Colors.green.shade600,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.work,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Çalışma Seansları',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Çalışma saatlerinizi takip edin',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ActiveWorkSessionPage(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.green.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: const Icon(Icons.play_arrow, size: 20),
+                  label: const Text(
+                    'Aktif Çalışma',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WorkSessionsHistoryPage(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.green.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: const Icon(Icons.history, size: 20),
+                  label: const Text(
+                    'Geçmiş',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

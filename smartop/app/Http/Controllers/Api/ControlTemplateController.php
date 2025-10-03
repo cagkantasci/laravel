@@ -13,11 +13,7 @@ class ControlTemplateController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-        $this->middleware('company');
-    }
+    // Middleware is applied in routes/api.php
 
     /**
      * Display a listing of the resource.
@@ -107,6 +103,12 @@ class ControlTemplateController extends Controller
         $data['company_id'] = $request->get('user_company_id');
         $data['created_by'] = $request->user()->id;
 
+        // Map template_items to control_items for database
+        if (isset($data['template_items'])) {
+            $data['control_items'] = $data['template_items'];
+            unset($data['template_items']);
+        }
+
         $template = ControlTemplate::create($data);
 
         return response()->json([
@@ -119,9 +121,16 @@ class ControlTemplateController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ControlTemplate $controlTemplate)
+    public function show(Request $request, string $id)
     {
-        //
+        $template = ControlTemplate::with(['company', 'creator'])->findOrFail($id);
+
+        $this->authorize('view', $template);
+
+        return response()->json([
+            'success' => true,
+            'data' => new ControlTemplateResource($template)
+        ]);
     }
 
     /**
@@ -129,14 +138,95 @@ class ControlTemplateController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $template = ControlTemplate::findOrFail($id);
+
+        $this->authorize('update', $template);
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'category' => 'required|string|max:100',
+            'machine_types' => 'nullable|array',
+            'machine_types.*' => 'string|max:100',
+            'template_items' => 'required|array|min:1',
+            'template_items.*.title' => 'required|string|max:255',
+            'template_items.*.description' => 'nullable|string',
+            'template_items.*.type' => 'required|in:checkbox,text,number,select,photo',
+            'template_items.*.required' => 'boolean',
+            'template_items.*.options' => 'nullable|array',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        // Map template_items to control_items for database
+        if (isset($data['template_items'])) {
+            $data['control_items'] = $data['template_items'];
+            unset($data['template_items']);
+        }
+
+        $template->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kontrol şablonu başarıyla güncellendi.',
+            'data' => new ControlTemplateResource($template->load(['company', 'creator']))
+        ]);
+    }
+
+    /**
+     * Duplicate a control template.
+     */
+    public function duplicate(Request $request, string $id)
+    {
+        $template = ControlTemplate::findOrFail($id);
+
+        $this->authorize('create', ControlTemplate::class);
+
+        // Create a copy of the template
+        $newTemplate = $template->replicate();
+        $newTemplate->uuid = \Illuminate\Support\Str::uuid(); // Generate new UUID
+        $newTemplate->name = $template->name . ' (Kopya)';
+        $newTemplate->company_id = $request->get('user_company_id');
+        $newTemplate->created_by = $request->user()->id;
+        $newTemplate->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kontrol şablonu başarıyla kopyalandı.',
+            'data' => new ControlTemplateResource($newTemplate->load(['company', 'creator']))
+        ], 201);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        //
+        $template = ControlTemplate::findOrFail($id);
+
+        $this->authorize('delete', $template);
+
+        // Check if template is being used by any control lists
+        if ($template->controlLists()->count() > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bu şablon kullanımda olduğu için silinemez.'
+            ], 422);
+        }
+
+        $template->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kontrol şablonu başarıyla silindi.'
+        ]);
     }
 }

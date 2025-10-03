@@ -82,12 +82,28 @@ class User extends Authenticatable
 
     public function controlLists()
     {
-        return $this->hasMany(ControlList::class, 'operator_id');
+        return $this->hasMany(ControlList::class, 'user_id');
     }
 
     public function approvedControlLists()
     {
         return $this->hasMany(ControlList::class, 'approved_by');
+    }
+
+    public function assignedMachines()
+    {
+        return $this->belongsToMany(Machine::class, 'machine_user', 'user_id', 'machine_id')
+            ->withTimestamps();
+    }
+
+    public function workSessions()
+    {
+        return $this->hasMany(WorkSession::class, 'user_id');
+    }
+
+    public function devices()
+    {
+        return $this->hasMany(UserDevice::class, 'user_id');
     }
 
     /**

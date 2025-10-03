@@ -72,6 +72,26 @@ return [
             'after_commit' => false,
         ],
 
+        // High priority queue for critical notifications
+        'redis-high' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'high-priority',
+            'retry_after' => 60,
+            'block_for' => null,
+            'after_commit' => false,
+        ],
+
+        // Low priority queue for bulk operations
+        'redis-low' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'low-priority',
+            'retry_after' => 300,
+            'block_for' => null,
+            'after_commit' => false,
+        ],
+
     ],
 
     /*

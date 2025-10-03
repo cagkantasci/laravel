@@ -21,8 +21,7 @@ class ControlTemplateResource extends JsonResource
             'description' => $this->description,
             'category' => $this->category,
             'machine_types' => $this->machine_types,
-            'template_items' => $this->template_items,
-            'estimated_duration' => $this->estimated_duration,
+            'items' => $this->control_items, // Map control_items to items for frontend
             'is_active' => $this->is_active,
             'items_count' => $this->items_count,
             'company' => $this->whenLoaded('company', function () {

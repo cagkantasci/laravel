@@ -1,82 +1,113 @@
 class ControlList {
-  final String id;
-  final String code;
+  final int id;
+  final String? uuid;
   final String title;
-  final String description;
-  final String machineId;
-  final String machineCode;
-  final String machineName;
+  final String? description;
+  final int? machineId;
+  final String? machineName;
+  final String? machineType;
+  final int? userId;
+  final String? userName;
+  final int? approvedBy;
+  final String? approverName;
   final String status;
-  final DateTime createdDate;
+  final String? priority;
+  final DateTime? scheduledDate;
   final DateTime? completedDate;
-  final String createdBy;
-  final String? completedBy;
-  final List<ControlItem> items;
+  final DateTime? approvedAt;
+  final String? rejectionReason;
+  final String? notes;
+  final List<ControlItem> controlItems;
   final double completionPercentage;
+  final String? priorityColor;
+  final String? statusColor;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   const ControlList({
     required this.id,
-    required this.code,
+    this.uuid,
     required this.title,
-    required this.description,
-    required this.machineId,
-    required this.machineCode,
-    required this.machineName,
+    this.description,
+    this.machineId,
+    this.machineName,
+    this.machineType,
+    this.userId,
+    this.userName,
+    this.approvedBy,
+    this.approverName,
     required this.status,
-    required this.createdDate,
+    this.priority,
+    this.scheduledDate,
     this.completedDate,
-    required this.createdBy,
-    this.completedBy,
-    required this.items,
+    this.approvedAt,
+    this.rejectionReason,
+    this.notes,
+    required this.controlItems,
     required this.completionPercentage,
+    this.priorityColor,
+    this.statusColor,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory ControlList.fromJson(Map<String, dynamic> json) {
     return ControlList(
-      id: json['id']?.toString() ?? '',
-      code: json['code']?.toString() ?? '',
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      uuid: json['uuid']?.toString(),
       title: json['title']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      machineId: json['machine_id']?.toString() ?? '',
-      machineCode: json['machine_code']?.toString() ?? '',
-      machineName: json['machine_name']?.toString() ?? '',
+      description: json['description']?.toString(),
+      machineId: json['machine_id'] is int ? json['machine_id'] : int.tryParse(json['machine_id']?.toString() ?? ''),
+      machineName: json['machine']?['name']?.toString(),
+      machineType: json['machine']?['type']?.toString(),
+      userId: json['user_id'] is int ? json['user_id'] : int.tryParse(json['user_id']?.toString() ?? ''),
+      userName: json['user']?['name']?.toString(),
+      approvedBy: json['approved_by'] is int ? json['approved_by'] : int.tryParse(json['approved_by']?.toString() ?? ''),
+      approverName: json['approver']?['name']?.toString(),
       status: json['status']?.toString() ?? 'pending',
-      createdDate:
-          DateTime.tryParse(json['created_date']?.toString() ?? '') ??
-          DateTime.now(),
+      priority: json['priority']?.toString(),
+      scheduledDate: json['scheduled_date'] != null
+          ? DateTime.tryParse(json['scheduled_date'].toString())
+          : null,
       completedDate: json['completed_date'] != null
           ? DateTime.tryParse(json['completed_date'].toString())
           : null,
-      createdBy: json['created_by']?.toString() ?? '',
-      completedBy: json['completed_by']?.toString(),
-      items:
-          (json['items'] as List<dynamic>?)
-              ?.map(
-                (item) => ControlItem.fromJson(item as Map<String, dynamic>),
-              )
+      approvedAt: json['approved_at'] != null
+          ? DateTime.tryParse(json['approved_at'].toString())
+          : null,
+      rejectionReason: json['rejection_reason']?.toString(),
+      notes: json['notes']?.toString(),
+      controlItems:
+          (json['control_items'] as List<dynamic>?)
+              ?.map((item) => ControlItem.fromJson(item as Map<String, dynamic>))
               .toList() ??
           [],
       completionPercentage:
-          double.tryParse(json['completion_percentage']?.toString() ?? '0') ??
-          0.0,
+          double.tryParse(json['completion_percentage']?.toString() ?? '0') ?? 0.0,
+      priorityColor: json['priority_color']?.toString(),
+      statusColor: json['status_color']?.toString(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'code': code,
+      'uuid': uuid,
       'title': title,
       'description': description,
       'machine_id': machineId,
-      'machine_code': machineCode,
-      'machine_name': machineName,
+      'user_id': userId,
+      'approved_by': approvedBy,
       'status': status,
-      'created_date': createdDate.toIso8601String(),
+      'priority': priority,
+      'scheduled_date': scheduledDate?.toIso8601String(),
       'completed_date': completedDate?.toIso8601String(),
-      'created_by': createdBy,
-      'completed_by': completedBy,
-      'items': items.map((item) => item.toJson()).toList(),
+      'approved_at': approvedAt?.toIso8601String(),
+      'rejection_reason': rejectionReason,
+      'notes': notes,
+      'control_items': controlItems.map((item) => item.toJson()).toList(),
       'completion_percentage': completionPercentage,
     };
   }
@@ -86,6 +117,7 @@ class ControlList {
   bool get isCompleted => status == 'completed';
   bool get isApproved => status == 'approved';
   bool get isRejected => status == 'rejected';
+  bool get canBeReverted => isApproved || isRejected;
 
   String get statusText {
     switch (status) {
@@ -104,46 +136,81 @@ class ControlList {
     }
   }
 
-  int get completedItemsCount => items.where((item) => item.isCompleted).length;
-  int get totalItemsCount => items.length;
+  String get priorityText {
+    switch (priority) {
+      case 'low':
+        return 'Düşük';
+      case 'medium':
+        return 'Orta';
+      case 'high':
+        return 'Yüksek';
+      case 'critical':
+        return 'Kritik';
+      default:
+        return 'Normal';
+    }
+  }
+
+  int get completedItemsCount => controlItems.where((item) => item.isCompleted).length;
+  int get totalItemsCount => controlItems.length;
 
   ControlList copyWith({
-    String? id,
-    String? code,
+    int? id,
+    String? uuid,
     String? title,
     String? description,
-    String? machineId,
-    String? machineCode,
+    int? machineId,
     String? machineName,
+    String? machineType,
+    int? userId,
+    String? userName,
+    int? approvedBy,
+    String? approverName,
     String? status,
-    DateTime? createdDate,
+    String? priority,
+    DateTime? scheduledDate,
     DateTime? completedDate,
-    String? createdBy,
-    String? completedBy,
-    List<ControlItem>? items,
+    DateTime? approvedAt,
+    String? rejectionReason,
+    String? notes,
+    List<ControlItem>? controlItems,
     double? completionPercentage,
+    String? priorityColor,
+    String? statusColor,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return ControlList(
       id: id ?? this.id,
-      code: code ?? this.code,
+      uuid: uuid ?? this.uuid,
       title: title ?? this.title,
       description: description ?? this.description,
       machineId: machineId ?? this.machineId,
-      machineCode: machineCode ?? this.machineCode,
       machineName: machineName ?? this.machineName,
+      machineType: machineType ?? this.machineType,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      approvedBy: approvedBy ?? this.approvedBy,
+      approverName: approverName ?? this.approverName,
       status: status ?? this.status,
-      createdDate: createdDate ?? this.createdDate,
+      priority: priority ?? this.priority,
+      scheduledDate: scheduledDate ?? this.scheduledDate,
       completedDate: completedDate ?? this.completedDate,
-      createdBy: createdBy ?? this.createdBy,
-      completedBy: completedBy ?? this.completedBy,
-      items: items ?? this.items,
+      approvedAt: approvedAt ?? this.approvedAt,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
+      notes: notes ?? this.notes,
+      controlItems: controlItems ?? this.controlItems,
       completionPercentage: completionPercentage ?? this.completionPercentage,
+      priorityColor: priorityColor ?? this.priorityColor,
+      statusColor: statusColor ?? this.statusColor,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   @override
   String toString() {
-    return 'ControlList(id: $id, code: $code, title: $title, status: $status)';
+    return 'ControlList(id: $id, title: $title, status: $status)';
   }
 
   @override
@@ -157,120 +224,86 @@ class ControlList {
 }
 
 class ControlItem {
-  final String id;
+  final String? id;
   final String title;
-  final String description;
+  final String? description;
   final String type;
-  final bool isRequired;
-  final String status;
-  final String? result;
-  final String? notes;
-  final DateTime? completedDate;
-  final String? completedBy;
+  final bool required;
+  final int order;
+  final bool? checked;
+  final String? value;
+  final String? photoUrl;
 
   const ControlItem({
-    required this.id,
+    this.id,
     required this.title,
-    required this.description,
+    this.description,
     required this.type,
-    required this.isRequired,
-    required this.status,
-    this.result,
-    this.notes,
-    this.completedDate,
-    this.completedBy,
+    required this.required,
+    required this.order,
+    this.checked,
+    this.value,
+    this.photoUrl,
   });
 
   factory ControlItem.fromJson(Map<String, dynamic> json) {
     return ControlItem(
-      id: json['id']?.toString() ?? '',
+      id: json['id']?.toString(),
       title: json['title']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      type: json['type']?.toString() ?? 'check',
-      isRequired: json['is_required'] == true,
-      status: json['status']?.toString() ?? 'pending',
-      result: json['result']?.toString(),
-      notes: json['notes']?.toString(),
-      completedDate: json['completed_date'] != null
-          ? DateTime.tryParse(json['completed_date'].toString())
-          : null,
-      completedBy: json['completed_by']?.toString(),
+      description: json['description']?.toString(),
+      type: json['type']?.toString() ?? 'checkbox',
+      required: json['required'] == true,
+      order: json['order'] is int ? json['order'] : int.tryParse(json['order']?.toString() ?? '0') ?? 0,
+      checked: json['checked'] as bool?,
+      value: json['value']?.toString(),
+      photoUrl: json['photo_url']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'title': title,
       'description': description,
       'type': type,
-      'is_required': isRequired,
-      'status': status,
-      'result': result,
-      'notes': notes,
-      'completed_date': completedDate?.toIso8601String(),
-      'completed_by': completedBy,
+      'required': required,
+      'order': order,
+      'checked': checked,
+      'value': value,
+      'photo_url': photoUrl,
     };
   }
 
-  bool get isPending => status == 'pending';
-  bool get isCompleted => status == 'completed';
-  bool get isPassed => result == 'pass';
-  bool get isFailed => result == 'fail';
-
-  String get statusText {
-    switch (status) {
-      case 'pending':
-        return 'Beklemede';
-      case 'completed':
-        return 'Tamamlandı';
-      default:
-        return 'Bilinmiyor';
-    }
-  }
-
-  String get resultText {
-    switch (result) {
-      case 'pass':
-        return 'Başarılı';
-      case 'fail':
-        return 'Başarısız';
-      case 'na':
-        return 'Uygulanamaz';
-      default:
-        return 'Beklemede';
-    }
-  }
+  bool get isPending => checked != true;
+  bool get isCompleted => checked == true;
 
   ControlItem copyWith({
     String? id,
     String? title,
     String? description,
     String? type,
-    bool? isRequired,
-    String? status,
-    String? result,
-    String? notes,
-    DateTime? completedDate,
-    String? completedBy,
+    bool? required,
+    int? order,
+    bool? checked,
+    String? value,
+    String? photoUrl,
   }) {
     return ControlItem(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
       type: type ?? this.type,
-      isRequired: isRequired ?? this.isRequired,
-      status: status ?? this.status,
-      result: result ?? this.result,
-      notes: notes ?? this.notes,
-      completedDate: completedDate ?? this.completedDate,
-      completedBy: completedBy ?? this.completedBy,
+      required: required ?? this.required,
+      order: order ?? this.order,
+      checked: checked ?? this.checked,
+      value: value ?? this.value,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 
   @override
   String toString() {
-    return 'ControlItem(id: $id, title: $title, status: $status, result: $result)';
+    return 'ControlItem(id: $id, title: $title, checked: $checked)';
   }
 
   @override

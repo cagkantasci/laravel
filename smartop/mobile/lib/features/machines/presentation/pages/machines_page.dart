@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/offline_aware_widget.dart';
+import '../../../../core/services/mock_auth_service.dart';
 import '../../data/models/machine.dart';
 import '../../data/dummy_machine_data.dart';
 import 'machine_detail_page.dart';
@@ -103,6 +104,10 @@ class _MachinesPageState extends State<MachinesPage>
 
   @override
   Widget build(BuildContext context) {
+    // Kullanıcı rolünü kontrol et
+    final userRole = MockAuthService.getCurrentUserRole();
+    final isOperator = userRole == 'operator';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Makine Yönetimi'),
@@ -150,19 +155,22 @@ class _MachinesPageState extends State<MachinesPage>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Yeni makine ekleme özelliği yakında...'),
+      // Operator rolü ise FloatingActionButton'ı gizle
+      floatingActionButton: isOperator
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Yeni makine ekleme özelliği yakında...'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Yeni Makine'),
+              backgroundColor: const Color(AppColors.primaryBlue),
+              foregroundColor: Colors.white,
             ),
-          );
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Yeni Makine'),
-        backgroundColor: const Color(AppColors.primaryBlue),
-        foregroundColor: Colors.white,
-      ),
     );
   }
 

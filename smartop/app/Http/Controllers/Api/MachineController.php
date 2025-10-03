@@ -13,11 +13,7 @@ class MachineController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-        $this->middleware('company');
-    }
+    // Middleware is applied in routes/api.php
 
     /**
      * Display a listing of the resource.
@@ -29,11 +25,16 @@ class MachineController extends Controller
         $user = $request->user();
         $companyId = $request->get('user_company_id');
 
-        $query = Machine::with('company:id,name');
+        // Operator sadece atanan makineleri görür
+        if ($user->hasRole('operator')) {
+            $query = $user->assignedMachines()->with('company:id,name');
+        } else {
+            $query = Machine::with('company:id,name');
 
-        // Apply company filter for non-admin users
-        if (!$user->hasRole('admin')) {
-            $query->where('company_id', $companyId);
+            // Apply company filter for non-admin users
+            if (!$user->hasRole('admin')) {
+                $query->where('company_id', $companyId);
+            }
         }
 
         // Apply filters
@@ -111,9 +112,22 @@ class MachineController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Machine $machine)
+    public function show(Request $request, Machine $machine)
     {
         $this->authorize('view', $machine);
+
+        $user = $request->user();
+
+        // Operator sadece atanan makineleri görebilir
+        if ($user->hasRole('operator')) {
+            $assignedMachineIds = $user->assignedMachines()->pluck('id')->toArray();
+            if (!in_array($machine->id, $assignedMachineIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bu makineye erişim yetkiniz yok.'
+                ], 403);
+            }
+        }
 
         $machine->load('company:id,name');
 

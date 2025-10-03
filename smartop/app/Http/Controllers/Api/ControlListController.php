@@ -13,11 +13,7 @@ class ControlListController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-        $this->middleware('company');
-    }
+    // Middleware is applied in routes/api.php
 
     /**
      * Display a listing of the resource.
@@ -272,6 +268,204 @@ class ControlListController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Kontrol listesi reddedildi.',
+            'data' => new ControlListResource($controlList->fresh(['company', 'machine', 'controlTemplate', 'user', 'approver']))
+        ]);
+    }
+
+    /**
+     * Revert the control list approval/rejection.
+     */
+    public function revert(Request $request, ControlList $controlList)
+    {
+        $this->authorize('revert', $controlList);
+
+        if (!in_array($controlList->status, ['approved', 'rejected'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sadece onaylanmış veya reddedilmiş kontrol listeleri geri alınabilir.'
+            ], 422);
+        }
+
+        $previousStatus = $controlList->status;
+        $controlList->update([
+            'status' => 'pending',
+            'approved_by' => null,
+            'approved_at' => null,
+            'rejection_reason' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => ucfirst($previousStatus === 'approved' ? 'Onay' : 'Red') . ' işlemi geri alındı.',
+            'data' => new ControlListResource($controlList->fresh(['company', 'machine', 'controlTemplate', 'user', 'approver']))
+        ]);
+    }
+
+    /**
+     * Get control lists assigned to the current user (operator)
+     */
+    public function myLists(Request $request)
+    {
+        $user = $request->user();
+        $companyId = $request->get('user_company_id');
+
+        $query = ControlList::with(['company:id,name', 'machine:id,name,type,location',
+                                  'controlTemplate:id,name,category', 'user:id,name', 'approver:id,name'])
+            ->where('company_id', $companyId)
+            ->where('user_id', $user->id);
+
+        // Apply status filter if provided
+        if ($request->has('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
+        $controlLists = $query->latest()->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => ControlListResource::collection($controlLists)
+        ]);
+    }
+
+    /**
+     * Start a control list
+     */
+    public function start(Request $request, ControlList $controlList)
+    {
+        $this->authorize('start', $controlList);
+
+        if ($controlList->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sadece bekleyen kontrol listeleri başlatılabilir.'
+            ], 422);
+        }
+
+        $controlList->update([
+            'status' => 'in_progress',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kontrol listesi başlatıldı.',
+            'data' => new ControlListResource($controlList->fresh(['company', 'machine', 'controlTemplate', 'user', 'approver']))
+        ]);
+    }
+
+    /**
+     * Complete a control list
+     */
+    public function complete(Request $request, ControlList $controlList)
+    {
+        $this->authorize('complete', $controlList);
+
+        if (!in_array($controlList->status, ['pending', 'in_progress'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bu kontrol listesi tamamlanamaz.'
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $controlList->update([
+            'status' => 'completed',
+            'completed_date' => now(),
+            'notes' => $request->input('notes'),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kontrol listesi tamamlandı.',
+            'data' => new ControlListResource($controlList->fresh(['company', 'machine', 'controlTemplate', 'user', 'approver']))
+        ]);
+    }
+
+    /**
+     * Update a control list item
+     */
+    public function updateItem(Request $request, ControlList $controlList, $itemId)
+    {
+        $this->authorize('updateItems', $controlList);
+
+        if (!in_array($controlList->status, ['pending', 'in_progress'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bu kontrol listesi düzenlenemez.'
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'checked' => 'nullable|boolean',
+            'value' => 'nullable|string|max:500',
+            'photo_url' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Get current control_items
+        $controlItems = $controlList->control_items ?? [];
+
+        // Find and update the item
+        $itemFound = false;
+        foreach ($controlItems as &$item) {
+            if (isset($item['id']) && $item['id'] == $itemId) {
+                if ($request->has('checked')) {
+                    $item['checked'] = $request->input('checked');
+                }
+                if ($request->has('value')) {
+                    $item['value'] = $request->input('value');
+                }
+                if ($request->has('photo_url')) {
+                    $item['photo_url'] = $request->input('photo_url');
+                }
+                $itemFound = true;
+                break;
+            }
+        }
+
+        if (!$itemFound) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kontrol maddesi bulunamadı.'
+            ], 404);
+        }
+
+        // Calculate completion percentage
+        $totalItems = count($controlItems);
+        $completedItems = 0;
+        foreach ($controlItems as $item) {
+            if (isset($item['checked']) && $item['checked'] === true) {
+                $completedItems++;
+            }
+        }
+        $completionPercentage = $totalItems > 0 ? ($completedItems / $totalItems) * 100 : 0;
+
+        // Update control list
+        $controlList->update([
+            'control_items' => $controlItems,
+            'completion_percentage' => $completionPercentage,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kontrol maddesi güncellendi.',
             'data' => new ControlListResource($controlList->fresh(['company', 'machine', 'controlTemplate', 'user', 'approver']))
         ]);
     }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/services/mock_auth_service.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../data/models/control_item.dart';
 
 class AddControlItemPage extends StatefulWidget {
@@ -71,7 +71,7 @@ class _AddControlItemPageState extends State<AddControlItemPage> {
     }
 
     // Check user permissions
-    final authService = MockAuthService();
+    final authService = AuthService();
     final user = authService.currentUser;
 
     if (user == null || (!user.isAdmin && !user.isManager)) {

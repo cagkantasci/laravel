@@ -74,7 +74,31 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard routes
     Route::get('dashboard', [\App\Http\Controllers\Api\DashboardController::class, 'index']);
     Route::get('reports', [\App\Http\Controllers\Api\DashboardController::class, 'reports']);
-    
+
+    // Financial routes (manager and admin only)
+    Route::middleware(['role:manager,admin'])->group(function () {
+        Route::get('financial-transactions', [\App\Http\Controllers\Api\FinancialTransactionController::class, 'index']);
+        Route::post('financial-transactions', [\App\Http\Controllers\Api\FinancialTransactionController::class, 'store']);
+        Route::get('financial-transactions/{id}', [\App\Http\Controllers\Api\FinancialTransactionController::class, 'show']);
+        Route::put('financial-transactions/{id}', [\App\Http\Controllers\Api\FinancialTransactionController::class, 'update']);
+        Route::delete('financial-transactions/{id}', [\App\Http\Controllers\Api\FinancialTransactionController::class, 'destroy']);
+        Route::get('financial-summary', [\App\Http\Controllers\Api\FinancialTransactionController::class, 'summary']);
+    });
+
+    // Dashboard Analytics routes (manager and admin only)
+    Route::middleware(['role:manager,admin'])->group(function () {
+        Route::get('analytics', [\App\Http\Controllers\Api\DashboardAnalyticsController::class, 'getAnalytics']);
+    });
+
+    // User management routes (manager and admin only)
+    Route::middleware(['role:manager,admin'])->group(function () {
+        Route::get('users', [\App\Http\Controllers\Api\UserController::class, 'index']);
+        Route::post('users', [\App\Http\Controllers\Api\UserController::class, 'store']);
+        Route::get('users/{id}', [\App\Http\Controllers\Api\UserController::class, 'show']);
+        Route::put('users/{id}', [\App\Http\Controllers\Api\UserController::class, 'update']);
+        Route::delete('users/{id}', [\App\Http\Controllers\Api\UserController::class, 'destroy']);
+    });
+
     // Admin only routes
     Route::middleware('role:admin')->group(function () {
         Route::prefix('admin')->group(function () {

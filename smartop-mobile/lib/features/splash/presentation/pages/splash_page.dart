@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/services/mock_auth_service.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../dashboard/presentation/pages/dashboard_page.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 
@@ -25,21 +25,15 @@ class _SplashPageState extends State<SplashPage> {
     if (!mounted) return;
 
     try {
-      final authService = MockAuthService();
+      final authService = AuthService();
+      await authService.init();
 
       if (authService.isLoggedIn) {
-        // Verify token is still valid
-        final isValid = await authService.verifyToken();
-
-        if (isValid) {
-          // Navigate to dashboard
+        // Navigate to dashboard
+        if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const DashboardPage()),
           );
-        } else {
-          // Token is invalid, logout and go to login
-          await authService.logout();
-          _navigateToLogin();
         }
       } else {
         _navigateToLogin();

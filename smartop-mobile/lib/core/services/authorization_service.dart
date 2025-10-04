@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'permission_service.dart';
-import 'mock_auth_service.dart';
+import 'auth_service.dart';
 
 /// Page-level permission guard widget
 /// Wraps pages that require specific role-based permissions
@@ -25,7 +25,8 @@ class PermissionGuard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final permissionService = PermissionService();
-    final currentUser = MockAuthService.getCurrentUser();
+    final authService = AuthService();
+    final currentUser = authService.currentUser;
     final userRole = currentUser?.role ?? '';
 
     // Check role-based permission
@@ -119,8 +120,9 @@ class FeatureGuard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final permissionService = PermissionService();
+    final authService = AuthService();
     final currentUserRole =
-        userRole ?? MockAuthService.getCurrentUserRole() ?? '';
+        userRole ?? authService.currentUser?.role ?? '';
 
     if (permissionService.hasPermission(currentUserRole, feature)) {
       return child;
@@ -147,8 +149,9 @@ class RoleGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authService = AuthService();
     final currentUserRole =
-        userRole ?? MockAuthService.getCurrentUserRole() ?? '';
+        userRole ?? authService.currentUser?.role ?? '';
 
     if (allowedRoles.contains(currentUserRole)) {
       return child;
@@ -161,8 +164,9 @@ class RoleGuard extends StatelessWidget {
 /// Mixin for pages that need authorization
 mixin AuthorizationMixin<T extends StatefulWidget> on State<T> {
   final PermissionService _permissionService = PermissionService();
+  final AuthService _authService = AuthService();
 
-  String get currentUserRole => MockAuthService.getCurrentUserRole() ?? '';
+  String get currentUserRole => _authService.currentUser?.role ?? '';
 
   bool hasPermission(String permission) {
     return _permissionService.hasPermission(currentUserRole, permission);
@@ -208,14 +212,16 @@ mixin AuthorizationMixin<T extends StatefulWidget> on State<T> {
 extension PermissionExtension on String {
   bool get isAllowedFor {
     final permissionService = PermissionService();
-    final userRole = MockAuthService.getCurrentUserRole() ?? '';
+    final authService = AuthService();
+    final userRole = authService.currentUser?.role ?? '';
     return permissionService.hasPermission(userRole, this);
   }
 }
 
 extension RoleExtension on String {
   bool get isCurrentUserRole {
-    final userRole = MockAuthService.getCurrentUserRole() ?? '';
+    final authService = AuthService();
+    final userRole = authService.currentUser?.role ?? '';
     return userRole == this;
   }
 }

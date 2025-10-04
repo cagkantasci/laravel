@@ -1,6 +1,7 @@
 class AppConstants {
   // API Configuration
-  static const String apiBaseUrl = 'http://127.0.0.1:8001/api';
+  // Use 10.0.2.2 for Android emulator to access host machine's localhost
+  static const String apiBaseUrl = 'http://10.0.2.2:8001/api';
   static const String apiTimeout = '30000'; // 30 seconds
 
   // Storage Keys

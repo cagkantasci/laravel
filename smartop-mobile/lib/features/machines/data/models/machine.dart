@@ -62,20 +62,20 @@ class Machine {
   factory Machine.fromJson(Map<String, dynamic> json) {
     return Machine(
       id: json['id']?.toString() ?? '',
-      code: json['code']?.toString() ?? '',
+      code: json['code']?.toString() ?? json['machine_code']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       status: json['status']?.toString() ?? 'inactive',
       location: json['location']?.toString() ?? '',
-      type: json['type']?.toString() ?? '',
+      type: json['type']?.toString() ?? json['machine_type']?.toString() ?? '',
       lastMaintenanceDate:
           DateTime.tryParse(json['last_maintenance_date']?.toString() ?? '') ??
-          DateTime.now(),
+          DateTime.now().subtract(const Duration(days: 30)),
       nextMaintenanceDate:
           DateTime.tryParse(json['next_maintenance_date']?.toString() ?? '') ??
-          DateTime.now(),
+          DateTime.now().add(const Duration(days: 60)),
       efficiency: double.tryParse(json['efficiency']?.toString() ?? '0') ?? 0.0,
-      imageUrl: json['image_url']?.toString() ?? '',
+      imageUrl: json['image_url']?.toString() ?? json['qr_code']?.toString() ?? '',
       controlItems:
           (json['control_items'] as List<dynamic>?)
               ?.map(
@@ -90,6 +90,17 @@ class Machine {
       controlCompletionRate:
           double.tryParse(json['control_completion_rate']?.toString() ?? '0') ??
           0.0,
+      model: json['model']?.toString(),
+      manufacturer: json['manufacturer']?.toString(),
+      serialNumber: json['serial_number']?.toString(),
+      installationDate: json['installation_date']?.toString(),
+      operatingHours: double.tryParse(json['operating_hours']?.toString() ?? '0'),
+      maxCapacity: double.tryParse(json['max_capacity']?.toString() ?? '0'),
+      powerConsumption: double.tryParse(json['power_consumption']?.toString() ?? '0'),
+      assignedOperator: json['assigned_operator']?.toString(),
+      department: json['department']?.toString(),
+      notes: json['notes']?.toString(),
+      isAutoMode: json['is_auto_mode'] as bool?,
     );
   }
 

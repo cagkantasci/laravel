@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:smartop_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:smartop_mobile/core/services/auth_service.dart';
-import 'package:smartop_mobile/core/services/mock_auth_service.dart';
 
 // Generate mocks
 @GenerateMocks([AuthService])
-
 void main() {
   group('LoginPage Widget Tests', () {
     setUp(() {
@@ -16,9 +13,7 @@ void main() {
     });
 
     Widget createLoginPage() {
-      return MaterialApp(
-        home: const LoginPage(),
-      );
+      return MaterialApp(home: const LoginPage());
     }
 
     group('UI Elements Tests', () {
@@ -29,7 +24,10 @@ void main() {
         // Assert
         expect(find.text('SmartOp'), findsOneWidget);
         expect(find.text('Endüstriyel Makine Kontrol Sistemi'), findsOneWidget);
-        expect(find.byType(TextFormField), findsNWidgets(2)); // Email and password fields
+        expect(
+          find.byType(TextFormField),
+          findsNWidgets(2),
+        ); // Email and password fields
         expect(find.text('E-posta'), findsOneWidget);
         expect(find.text('Şifre'), findsOneWidget);
         expect(find.text('Giriş Yap'), findsOneWidget);
@@ -61,7 +59,9 @@ void main() {
     });
 
     group('Input Validation Tests', () {
-      testWidgets('should show validation errors for empty fields', (tester) async {
+      testWidgets('should show validation errors for empty fields', (
+        tester,
+      ) async {
         // Arrange
         await tester.pumpWidget(createLoginPage());
 
@@ -74,12 +74,17 @@ void main() {
         expect(find.text('Şifre gerekli'), findsOneWidget);
       });
 
-      testWidgets('should show validation error for invalid email format', (tester) async {
+      testWidgets('should show validation error for invalid email format', (
+        tester,
+      ) async {
         // Arrange
         await tester.pumpWidget(createLoginPage());
 
         // Act
-        await tester.enterText(find.byType(TextFormField).first, 'invalid-email');
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'invalid-email',
+        );
         await tester.enterText(find.byType(TextFormField).last, 'password123');
         await tester.tap(find.text('Giriş Yap'));
         await tester.pump();
@@ -88,12 +93,17 @@ void main() {
         expect(find.text('Geçerli bir e-posta adresi girin'), findsOneWidget);
       });
 
-      testWidgets('should show validation error for short password', (tester) async {
+      testWidgets('should show validation error for short password', (
+        tester,
+      ) async {
         // Arrange
         await tester.pumpWidget(createLoginPage());
 
         // Act
-        await tester.enterText(find.byType(TextFormField).first, 'test@smartop.com');
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'test@smartop.com',
+        );
         await tester.enterText(find.byType(TextFormField).last, '123');
         await tester.tap(find.text('Giriş Yap'));
         await tester.pump();
@@ -107,7 +117,10 @@ void main() {
         await tester.pumpWidget(createLoginPage());
 
         // Act
-        await tester.enterText(find.byType(TextFormField).first, 'test@smartop.com');
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'test@smartop.com',
+        );
         await tester.pump();
 
         // Assert - No validation error should be shown
@@ -164,7 +177,9 @@ void main() {
     });
 
     group('Navigation Tests', () {
-      testWidgets('should show forgot password message when tapped', (tester) async {
+      testWidgets('should show forgot password message when tapped', (
+        tester,
+      ) async {
         // Arrange
         await tester.pumpWidget(createLoginPage());
 
@@ -173,10 +188,15 @@ void main() {
         await tester.pump();
 
         // Assert
-        expect(find.text('Şifre sıfırlama yakında eklenecek...'), findsOneWidget);
+        expect(
+          find.text('Şifre sıfırlama yakında eklenecek...'),
+          findsOneWidget,
+        );
       });
 
-      testWidgets('should show register message when create account tapped', (tester) async {
+      testWidgets('should show register message when create account tapped', (
+        tester,
+      ) async {
         // Arrange
         await tester.pumpWidget(createLoginPage());
 
@@ -195,22 +215,32 @@ void main() {
         await tester.pumpWidget(createLoginPage());
 
         // Act
-        await tester.enterText(find.byType(TextFormField).first, 'admin@smartop.com');
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'admin@smartop.com',
+        );
         await tester.enterText(find.byType(TextFormField).last, '123456');
         await tester.tap(find.text('Giriş Yap'));
         await tester.pump(); // Start the async operation
-        await tester.pump(const Duration(milliseconds: 100)); // Let it start loading
+        await tester.pump(
+          const Duration(milliseconds: 100),
+        ); // Let it start loading
 
         // Assert
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('should show success message on successful login', (tester) async {
+      testWidgets('should show success message on successful login', (
+        tester,
+      ) async {
         // Arrange
         await tester.pumpWidget(createLoginPage());
 
         // Act
-        await tester.enterText(find.byType(TextFormField).first, 'admin@smartop.com');
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'admin@smartop.com',
+        );
         await tester.enterText(find.byType(TextFormField).last, '123456');
         await tester.tap(find.text('Giriş Yap'));
         await tester.pumpAndSettle(); // Wait for async operations to complete
@@ -244,7 +274,10 @@ void main() {
         await tester.pumpWidget(createLoginPage());
 
         // Act
-        await tester.enterText(find.byType(TextFormField).first, 'test@smartop.com');
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'test@smartop.com',
+        );
         await tester.enterText(find.byType(TextFormField).last, 'password123');
         await tester.tap(find.text('Giriş Yap'));
         await tester.pumpAndSettle();
@@ -255,7 +288,9 @@ void main() {
     });
 
     group('Accessibility Tests', () {
-      testWidgets('should have proper semantics for screen readers', (tester) async {
+      testWidgets('should have proper semantics for screen readers', (
+        tester,
+      ) async {
         // Arrange
         await tester.pumpWidget(createLoginPage());
 
@@ -277,9 +312,13 @@ void main() {
     });
 
     group('Responsive Design Tests', () {
-      testWidgets('should layout properly on different screen sizes', (tester) async {
+      testWidgets('should layout properly on different screen sizes', (
+        tester,
+      ) async {
         // Test on different screen sizes
-        await tester.binding.setSurfaceSize(const Size(800, 600)); // Tablet size
+        await tester.binding.setSurfaceSize(
+          const Size(800, 600),
+        ); // Tablet size
         await tester.pumpWidget(createLoginPage());
 
         expect(find.byType(SingleChildScrollView), findsOneWidget);
@@ -300,7 +339,10 @@ void main() {
         await tester.pumpWidget(createLoginPage());
 
         // Act
-        await tester.enterText(find.byType(TextFormField).first, 'test@smartop.com');
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'test@smartop.com',
+        );
         await tester.enterText(find.byType(TextFormField).last, 'password123');
 
         // Trigger rebuild

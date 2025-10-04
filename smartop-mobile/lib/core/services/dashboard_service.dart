@@ -11,7 +11,7 @@ class DashboardService {
   // Get dashboard statistics
   Future<Map<String, dynamic>> getDashboardStats() async {
     try {
-      final response = await _apiClient.get('/dashboard/stats');
+      final response = await _apiClient.get('/dashboard');
       return response['data'] ?? {};
     } catch (e) {
       if (e is ApiException) {

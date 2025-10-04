@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/permission_service.dart';
-import '../../../../core/services/mock_auth_service.dart';
+import '../../../../core/services/auth_service.dart';
+import '../../data/models/control_list.dart';
+import '../../data/services/control_list_service.dart';
 import 'control_list_detail_page.dart';
 
 class ControlListsPage extends StatefulWidget {
@@ -15,9 +17,13 @@ class _ControlListsPageState extends State<ControlListsPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  final ControlListService _controlListService = ControlListService();
+  final AuthService _authService = AuthService();
+
   String _searchQuery = '';
-  List<Map<String, dynamic>> _allControlLists = [];
-  List<Map<String, dynamic>> _filteredControlLists = [];
+  List<ControlList> _allControlLists = [];
+  List<ControlList> _filteredControlLists = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -33,132 +39,61 @@ class _ControlListsPageState extends State<ControlListsPage>
     super.dispose();
   }
 
-  void _loadControlLists() {
-    // Mock data for control lists
-    _allControlLists = [
-      {
-        'id': 'CL001',
-        'title': 'CNC Tezgah #1 Günlük Kontrol',
-        'machine': 'CNC Tezgah #1',
-        'machineCode': 'M001',
-        'category': 'Günlük',
-        'status': 'completed',
-        'priority': 'Yüksek',
-        'assignedTo': 'Ahmet Yılmaz',
-        'dueDate': DateTime.now().subtract(const Duration(hours: 2)),
-        'completedDate': DateTime.now().subtract(const Duration(hours: 1)),
-        'description': 'CNC tezgahının günlük rutin kontrol listesi',
-        'progress': 100.0,
-        'totalItems': 15,
-        'completedItems': 15,
-        'isOverdue': false,
-      },
-      {
-        'id': 'CL002',
-        'title': 'Hadde Makinesi #2 Haftalık Kontrol',
-        'machine': 'Hadde Makinesi #2',
-        'machineCode': 'M002',
-        'category': 'Haftalık',
-        'status': 'in_progress',
-        'priority': 'Orta',
-        'assignedTo': 'Fatma Demir',
-        'dueDate': DateTime.now().add(const Duration(hours: 4)),
-        'completedDate': null,
-        'description': 'Hadde makinesinin haftalık bakım kontrolü',
-        'progress': 60.0,
-        'totalItems': 20,
-        'completedItems': 12,
-        'isOverdue': false,
-      },
-      {
-        'id': 'CL003',
-        'title': 'Pres Makinesi #3 Güvenlik Kontrolü',
-        'machine': 'Pres Makinesi #3',
-        'machineCode': 'M003',
-        'category': 'Güvenlik',
-        'status': 'pending',
-        'priority': 'Yüksek',
-        'assignedTo': 'Mehmet Kaya',
-        'dueDate': DateTime.now().subtract(const Duration(hours: 1)),
-        'completedDate': null,
-        'description': 'Pres makinesinin acil güvenlik kontrolü',
-        'progress': 0.0,
-        'totalItems': 25,
-        'completedItems': 0,
-        'isOverdue': true,
-      },
-      {
-        'id': 'CL004',
-        'title': 'Tornalama Tezgahı #4 Kalibrasyon',
-        'machine': 'Tornalama Tezgahı #4',
-        'machineCode': 'M004',
-        'category': 'Kalibrasyon',
-        'status': 'in_progress',
-        'priority': 'Orta',
-        'assignedTo': 'Ayşe Öz',
-        'dueDate': DateTime.now().add(const Duration(days: 1)),
-        'completedDate': null,
-        'description': 'Torna tezgahının hassasiyet kalibrasyonu',
-        'progress': 35.0,
-        'totalItems': 18,
-        'completedItems': 6,
-        'isOverdue': false,
-      },
-      {
-        'id': 'CL005',
-        'title': 'Kaynak Makinesi #5 Aylık Bakım',
-        'machine': 'Kaynak Makinesi #5',
-        'machineCode': 'M005',
-        'category': 'Aylık',
-        'status': 'completed',
-        'priority': 'Düşük',
-        'assignedTo': 'Ali Veli',
-        'dueDate': DateTime.now().subtract(const Duration(days: 2)),
-        'completedDate': DateTime.now().subtract(const Duration(days: 1)),
-        'description': 'Kaynak makinesinin aylık genel bakımı',
-        'progress': 100.0,
-        'totalItems': 12,
-        'completedItems': 12,
-        'isOverdue': false,
-      },
-    ];
-    _filteredControlLists = _allControlLists;
+  Future<void> _loadControlLists() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final lists = await _controlListService.getMyControlLists();
+      setState(() {
+        _allControlLists = lists;
+        _filteredControlLists = lists;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _filterControlLists() {
     setState(() {
       _filteredControlLists = _allControlLists.where((list) {
         final matchesSearch =
-            list['title'].toString().toLowerCase().contains(
-              _searchQuery.toLowerCase(),
-            ) ||
-            list['machine'].toString().toLowerCase().contains(
-              _searchQuery.toLowerCase(),
-            ) ||
-            list['machineCode'].toString().toLowerCase().contains(
-              _searchQuery.toLowerCase(),
-            );
+            list.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            list.machineName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            list.machineCode.toLowerCase().contains(_searchQuery.toLowerCase());
 
         return matchesSearch;
       }).toList();
     });
   }
 
-  List<Map<String, dynamic>> _getFilteredLists(int tabIndex) {
+  List<ControlList> _getFilteredLists(int tabIndex) {
     switch (tabIndex) {
       case 0: // Tümü
         return _filteredControlLists;
       case 1: // Bekleyen
         return _filteredControlLists
-            .where((list) => list['status'] == 'pending')
+            .where((list) => list.status == 'pending')
             .toList();
       case 2: // Devam Eden
         return _filteredControlLists
-            .where((list) => list['status'] == 'in_progress')
+            .where((list) => list.status == 'in_progress')
             .toList();
       case 3: // Tamamlanan
         return _filteredControlLists
-            .where((list) => list['status'] == 'completed')
+            .where((list) => list.status == 'completed')
             .toList();
       default:
         return _filteredControlLists;
@@ -167,7 +102,7 @@ class _ControlListsPageState extends State<ControlListsPage>
 
   @override
   Widget build(BuildContext context) {
-    final user = MockAuthService.getCurrentUser();
+    final user = _authService.currentUser;
     final canCreate = PermissionService().hasPermission(
       user?.role ?? '',
       'user_management',
@@ -190,17 +125,17 @@ class _ControlListsPageState extends State<ControlListsPage>
             ),
             Tab(
               text:
-                  'Bekleyen (${_allControlLists.where((l) => l['status'] == 'pending').length})',
+                  'Bekleyen (${_allControlLists.where((l) => l.status == 'pending').length})',
               icon: const Icon(Icons.schedule, size: 16),
             ),
             Tab(
               text:
-                  'Devam Eden (${_allControlLists.where((l) => l['status'] == 'in_progress').length})',
+                  'Devam Eden (${_allControlLists.where((l) => l.status == 'in_progress').length})',
               icon: const Icon(Icons.play_circle, size: 16),
             ),
             Tab(
               text:
-                  'Tamamlanan (${_allControlLists.where((l) => l['status'] == 'completed').length})',
+                  'Tamamlanan (${_allControlLists.where((l) => l.status == 'completed').length})',
               icon: const Icon(Icons.check_circle, size: 16),
             ),
           ],
@@ -210,15 +145,20 @@ class _ControlListsPageState extends State<ControlListsPage>
         children: [
           _buildSearchBar(),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildControlListView(0),
-                _buildControlListView(1),
-                _buildControlListView(2),
-                _buildControlListView(3),
-              ],
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+                    onRefresh: _loadControlLists,
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildControlListView(0),
+                        _buildControlListView(1),
+                        _buildControlListView(2),
+                        _buildControlListView(3),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -308,19 +248,14 @@ class _ControlListsPageState extends State<ControlListsPage>
     );
   }
 
-  Widget _buildControlListCard(Map<String, dynamic> controlList) {
-    final isOverdue = controlList['isOverdue'] ?? false;
-    final status = controlList['status'];
-    final progress = controlList['progress'].toDouble();
+  Widget _buildControlListCard(ControlList controlList) {
+    final progress = controlList.completionPercentage;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isOverdue
-            ? const BorderSide(color: Color(AppColors.errorRed), width: 2)
-            : BorderSide.none,
       ),
       child: InkWell(
         onTap: () => _openControlListDetail(controlList),
@@ -335,7 +270,7 @@ class _ControlListsPageState extends State<ControlListsPage>
                 children: [
                   Expanded(
                     child: Text(
-                      controlList['title'],
+                      controlList.title,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -345,7 +280,7 @@ class _ControlListsPageState extends State<ControlListsPage>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _buildStatusChip(status, isOverdue),
+                  _buildStatusChip(controlList.status),
                 ],
               ),
               const SizedBox(height: 12),
@@ -361,13 +296,24 @@ class _ControlListsPageState extends State<ControlListsPage>
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      '${controlList['machine']} (${controlList['machineCode']})',
+                      '${controlList.machineName} (${controlList.machineCode})',
                       style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+
+              if (controlList.description.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  controlList.description,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+
+              const SizedBox(height: 12),
 
               // Progress Bar
               Column(
@@ -377,7 +323,7 @@ class _ControlListsPageState extends State<ControlListsPage>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'İlerleme: ${controlList['completedItems']}/${controlList['totalItems']}',
+                        'İlerleme',
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                       Text(
@@ -405,40 +351,28 @@ class _ControlListsPageState extends State<ControlListsPage>
               // Bottom Info Row
               Row(
                 children: [
-                  // Category
-                  _buildInfoChip(
-                    controlList['category'],
-                    Icons.category,
-                    const Color(AppColors.infoBlue),
-                  ),
-                  const SizedBox(width: 8),
-                  // Priority
-                  _buildInfoChip(
-                    controlList['priority'],
-                    Icons.flag,
-                    _getPriorityColor(controlList['priority']),
-                  ),
-                  const Spacer(),
-                  // Due Date
+                  // Created by
+                  if (controlList.createdBy.isNotEmpty) ...[
+                    Icon(Icons.person, size: 12, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      controlList.createdBy,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    ),
+                    const Spacer(),
+                  ],
+                  // Created Date
                   Row(
                     children: [
                       Icon(
-                        isOverdue ? Icons.schedule : Icons.access_time,
-                        size: 14,
-                        color: isOverdue
-                            ? const Color(AppColors.errorRed)
-                            : Colors.grey[600],
+                        Icons.access_time,
+                        size: 12,
+                        color: Colors.grey[600],
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _formatDate(controlList['dueDate']),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isOverdue
-                              ? const Color(AppColors.errorRed)
-                              : Colors.grey[600],
-                          fontWeight: isOverdue ? FontWeight.bold : null,
-                        ),
+                        _formatDate(controlList.createdDate),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -451,37 +385,41 @@ class _ControlListsPageState extends State<ControlListsPage>
     );
   }
 
-  Widget _buildStatusChip(String status, bool isOverdue) {
+  Widget _buildStatusChip(String status) {
     Color color;
     String text;
     IconData icon;
 
-    if (isOverdue) {
-      color = const Color(AppColors.errorRed);
-      text = 'Gecikmiş';
-      icon = Icons.warning;
-    } else {
-      switch (status) {
-        case 'pending':
-          color = const Color(AppColors.warningOrange);
-          text = 'Bekleyen';
-          icon = Icons.schedule;
-          break;
-        case 'in_progress':
-          color = const Color(AppColors.infoBlue);
-          text = 'Devam Eden';
-          icon = Icons.play_circle;
-          break;
-        case 'completed':
-          color = const Color(AppColors.successGreen);
-          text = 'Tamamlandı';
-          icon = Icons.check_circle;
-          break;
-        default:
-          color = const Color(AppColors.grey500);
-          text = 'Bilinmiyor';
-          icon = Icons.help;
-      }
+    switch (status) {
+      case 'pending':
+        color = const Color(AppColors.warningOrange);
+        text = 'Bekleyen';
+        icon = Icons.schedule;
+        break;
+      case 'in_progress':
+        color = const Color(AppColors.infoBlue);
+        text = 'Devam Eden';
+        icon = Icons.play_circle;
+        break;
+      case 'completed':
+        color = const Color(AppColors.successGreen);
+        text = 'Tamamlandı';
+        icon = Icons.check_circle;
+        break;
+      case 'approved':
+        color = const Color(AppColors.successGreen);
+        text = 'Onaylandı';
+        icon = Icons.verified;
+        break;
+      case 'rejected':
+        color = const Color(AppColors.errorRed);
+        text = 'Reddedildi';
+        icon = Icons.cancel;
+        break;
+      default:
+        color = const Color(AppColors.grey500);
+        text = 'Bilinmiyor';
+        icon = Icons.help;
     }
 
     return Container(
@@ -509,48 +447,10 @@ class _ControlListsPageState extends State<ControlListsPage>
     );
   }
 
-  Widget _buildInfoChip(String text, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: color),
-          const SizedBox(width: 2),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Color _getProgressColor(double progress) {
     if (progress >= 80) return const Color(AppColors.successGreen);
     if (progress >= 50) return const Color(AppColors.warningOrange);
     return const Color(AppColors.errorRed);
-  }
-
-  Color _getPriorityColor(String priority) {
-    switch (priority) {
-      case 'Yüksek':
-        return const Color(AppColors.errorRed);
-      case 'Orta':
-        return const Color(AppColors.warningOrange);
-      case 'Düşük':
-        return const Color(AppColors.successGreen);
-      default:
-        return const Color(AppColors.grey500);
-    }
   }
 
   String _formatDate(DateTime date) {
@@ -577,11 +477,13 @@ class _ControlListsPageState extends State<ControlListsPage>
     }
   }
 
-  void _openControlListDetail(Map<String, dynamic> controlList) {
+  void _openControlListDetail(ControlList controlList) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ControlListDetailPage(controlList: controlList),
+        builder: (context) => ControlListDetailPage(
+          controlList: controlList.toJson(),
+        ),
       ),
     ).then((_) {
       // Refresh the list when returning from detail page

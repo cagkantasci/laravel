@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/widgets/offline_aware_widget.dart';
 import '../../data/models/machine.dart';
-import '../../data/dummy_machine_data.dart';
+import '../../data/services/machine_service.dart';
 import 'machine_detail_page.dart';
+import 'add_machine_page.dart';
 
 class MachinesPage extends StatefulWidget {
   const MachinesPage({super.key});
@@ -13,13 +13,17 @@ class MachinesPage extends StatefulWidget {
 }
 
 class _MachinesPageState extends State<MachinesPage>
-    with TickerProviderStateMixin, OfflineCapableMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
+  final MachineService _machineService = MachineService();
   List<Machine> _allMachines = [];
   List<Machine> _filteredMachines = [];
   String _searchQuery = '';
   String _selectedType = 'Tümü';
   String _selectedLocation = 'Tümü';
+  bool _isLoading = false;
+  List<String> _availableTypes = [];
+  List<String> _availableLocations = [];
 
   @override
   void initState() {
@@ -35,33 +39,38 @@ class _MachinesPageState extends State<MachinesPage>
   }
 
   void _loadMachines() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       List<Machine> machines;
 
-      if (isConnected) {
-        // Load from API or use dummy data
-        machines = DummyMachineData.getMachines();
-      } else {
-        // Load from offline cache
-        final cachedData = await getCachedMachines();
-        if (cachedData.isNotEmpty) {
-          machines = cachedData.map((data) => Machine.fromJson(data)).toList();
-        } else {
-          // Fallback to dummy data if no cache
-          machines = DummyMachineData.getMachines();
-        }
-      }
+      // Load from API
+      machines = await _machineService.getMachines();
+
+      // Extract unique types and locations
+      _availableTypes = machines.map((m) => m.type).toSet().toList()..sort();
+      _availableLocations = machines.map((m) => m.location).toSet().toList()..sort();
 
       setState(() {
         _allMachines = machines;
         _filteredMachines = machines;
+        _isLoading = false;
       });
     } catch (e) {
-      // Fallback to dummy data on error
       setState(() {
-        _allMachines = DummyMachineData.getMachines();
-        _filteredMachines = _allMachines;
+        _isLoading = false;
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -119,16 +128,15 @@ class _MachinesPageState extends State<MachinesPage>
               icon: const Icon(Icons.apps, size: 16),
             ),
             Tab(
-              text: 'Aktif (${DummyMachineData.getActiveMachines().length})',
+              text: 'Aktif (${_allMachines.where((m) => m.isActive).length})',
               icon: const Icon(Icons.play_circle, size: 16),
             ),
             Tab(
-              text:
-                  'Bakım (${DummyMachineData.getMaintenanceMachines().length})',
+              text: 'Bakım (${_allMachines.where((m) => m.isMaintenance).length})',
               icon: const Icon(Icons.build, size: 16),
             ),
             Tab(
-              text: 'Pasif (${DummyMachineData.getInactiveMachines().length})',
+              text: 'Pasif (${_allMachines.where((m) => m.isInactive).length})',
               icon: const Icon(Icons.pause_circle, size: 16),
             ),
           ],
@@ -151,12 +159,18 @@ class _MachinesPageState extends State<MachinesPage>
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Yeni makine ekleme özelliği yakında...'),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddMachinePage(),
             ),
           );
+
+          if (result == true) {
+            // Refresh machine list
+            _loadMachines();
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text('Yeni Makine'),
@@ -205,7 +219,7 @@ class _MachinesPageState extends State<MachinesPage>
                 child: _buildFilterDropdown(
                   'Tip',
                   _selectedType,
-                  ['Tümü', ...DummyMachineData.getMachineTypes()],
+                  ['Tümü', ..._availableTypes],
                   (value) {
                     setState(() {
                       _selectedType = value!;
@@ -219,7 +233,7 @@ class _MachinesPageState extends State<MachinesPage>
                 child: _buildFilterDropdown(
                   'Lokasyon',
                   _selectedLocation,
-                  ['Tümü', ...DummyMachineData.getMachineLocations()],
+                  ['Tümü', ..._availableLocations],
                   (value) {
                     setState(() {
                       _selectedLocation = value!;
@@ -269,6 +283,12 @@ class _MachinesPageState extends State<MachinesPage>
   }
 
   Widget _buildMachineList(int tabIndex) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     final machines = _getMachinesByTab(tabIndex);
 
     if (machines.isEmpty) {
@@ -277,8 +297,8 @@ class _MachinesPageState extends State<MachinesPage>
 
     return RefreshIndicator(
       onRefresh: () async {
+        await Future.delayed(const Duration(milliseconds: 300));
         _loadMachines();
-        await Future.delayed(const Duration(seconds: 1));
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(AppSizes.paddingMedium),

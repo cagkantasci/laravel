@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/mock_auth_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/permission_service.dart';
 import '../../../machines/presentation/pages/machines_page.dart';
-import '../../../control_lists/presentation/pages/control_lists_page.dart';
 import '../../../notifications/presentation/pages/notifications_page.dart';
 
 import '../../../control_lists/presentation/pages/control_list_detail_page.dart';

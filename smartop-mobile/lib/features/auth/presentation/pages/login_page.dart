@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/services/mock_auth_service.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../dashboard/presentation/pages/dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -41,34 +41,40 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      // Use mock service for offline testing
-      final authService = MockAuthService();
-      await authService.login(
-        _emailController.text.trim(),
-        _passwordController.text,
+      final authService = AuthService();
+      final result = await authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Giriş başarılı! Hoş geldiniz.'),
-            backgroundColor: Color(AppColors.successGreen),
-          ),
-        );
+        if (result['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Giriş başarılı! Hoş geldiniz.'),
+              backgroundColor: const Color(AppColors.successGreen),
+            ),
+          );
 
-        // Navigate to Dashboard
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const DashboardPage()),
-        );
+          // Navigate to Dashboard
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const DashboardPage()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Giriş başarısız!'),
+              backgroundColor: const Color(AppColors.errorRed),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.',
-            ),
-            backgroundColor: Color(AppColors.errorRed),
+          SnackBar(
+            content: Text('Hata: ${e.toString()}'),
+            backgroundColor: const Color(AppColors.errorRed),
           ),
         );
       }

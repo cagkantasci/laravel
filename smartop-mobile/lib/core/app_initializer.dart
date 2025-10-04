@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'network/api_client.dart';
 import 'services/auth_service.dart';
-import 'services/mock_auth_service.dart';
 import 'services/notification_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/offline_sync_service.dart';
@@ -15,7 +14,7 @@ class AppInitializer {
   bool get isInitialized => _isInitialized;
 
   // Initialize all app services
-  Future<void> initialize({bool useMockServices = true}) async {
+  Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
@@ -23,20 +22,12 @@ class AppInitializer {
       await ConnectivityService().initialize();
       await OfflineSyncService().initialize();
 
-      if (useMockServices) {
-        // Initialize with mock services for offline testing
-        await MockAuthService().init();
+      // Initialize API client and auth
+      await ApiClient().init();
+      await AuthService().init();
 
-        // Initialize notification service
-        NotificationService().initialize();
-      } else {
-        // Initialize API client for real API
-        await ApiClient().init();
-        await AuthService().init();
-
-        // Initialize notification service
-        NotificationService().initialize();
-      }
+      // Initialize notification service
+      NotificationService().initialize();
 
       _isInitialized = true;
     } catch (e) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/services/mock_auth_service.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/permission_service.dart';
 
 enum UserRole { admin, manager, operator }
@@ -166,7 +166,7 @@ class _UserManagementPageState extends State<UserManagementPage>
   @override
   Widget build(BuildContext context) {
     // Check user management access
-    final userRole = MockAuthService.getCurrentUserRole();
+    final userRole = AuthService().currentUser?.role ?? '';
     final permissionService = PermissionService();
 
     if (!permissionService.canManageUsers(userRole ?? '')) {
@@ -776,7 +776,7 @@ class _AddEditUserDialogState extends State<AddEditUserDialog> {
   }
 
   List<UserRole> _getAvailableRoles() {
-    final currentUserRole = MockAuthService.getCurrentUserRole();
+    final currentUserRole = AuthService().currentUser?.role ?? '';
 
     List<UserRole> availableRoles = [];
 

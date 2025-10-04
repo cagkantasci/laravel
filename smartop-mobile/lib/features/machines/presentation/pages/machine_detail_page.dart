@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/services/mock_auth_service.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../data/models/machine.dart';
 import 'machine_control_page.dart';
 import 'add_control_item_page.dart';
@@ -1203,7 +1203,7 @@ class _MachineDetailPageState extends State<MachineDetailPage> {
 
   // Admin/Manager kontrol yönetimi metodları
   bool _canManageControls() {
-    final authService = MockAuthService();
+    final authService = AuthService();
     final user = authService.currentUser;
     return user != null && (user.isAdmin || user.isManager);
   }

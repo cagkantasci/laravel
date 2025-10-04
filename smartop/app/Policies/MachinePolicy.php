@@ -13,7 +13,7 @@ class MachinePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_machines');
+        return $user->can('machines.view');
     }
 
     /**
@@ -26,7 +26,7 @@ class MachinePolicy
         }
 
         // Users can only view machines from their company
-        return $user->company_id === $machine->company_id && $user->can('view_machines');
+        return $user->company_id === $machine->company_id && $user->can('machines.view');
     }
 
     /**
@@ -34,7 +34,7 @@ class MachinePolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_machines');
+        return $user->can('machines.create');
     }
 
     /**
@@ -43,11 +43,11 @@ class MachinePolicy
     public function update(User $user, Machine $machine): bool
     {
         if ($user->hasRole('admin')) {
-            return $user->can('edit_machines');
+            return $user->can('machines.update');
         }
 
         // Users can only update machines from their company
-        return $user->company_id === $machine->company_id && $user->can('edit_machines');
+        return $user->company_id === $machine->company_id && $user->can('machines.update');
     }
 
     /**
@@ -56,13 +56,13 @@ class MachinePolicy
     public function delete(User $user, Machine $machine): bool
     {
         if ($user->hasRole('admin')) {
-            return $user->can('delete_machines');
+            return $user->can('machines.delete');
         }
 
         // Managers can delete machines from their company
         return $user->hasRole('manager') &&
                $user->company_id === $machine->company_id &&
-               $user->can('delete_machines');
+               $user->can('machines.delete');
     }
 
     /**
@@ -78,6 +78,6 @@ class MachinePolicy
      */
     public function forceDelete(User $user, Machine $machine): bool
     {
-        return $user->hasRole('admin') && $user->can('delete_machines');
+        return $user->hasRole('admin') && $user->can('machines.delete');
     }
 }

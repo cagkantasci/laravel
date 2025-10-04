@@ -30,8 +30,8 @@ class User {
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       email: json['email'] ?? '',
-      role: json['role'] ?? '',
-      company: json['company'],
+      role: (json['role'] ?? (json['roles'] != null && (json['roles'] as List).isNotEmpty ? json['roles'][0]['name'] : '')),
+      company: (json['company'] is Map ? json['company']['name'] : json['company']),
       emailVerifiedAt: json['email_verified_at'] != null
           ? DateTime.tryParse(json['email_verified_at'])
           : null,
@@ -134,33 +134,48 @@ class AuthService {
   }
 
   // Login with email and password
-  Future<User> login(String email, String password) async {
+  Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
     try {
       final response = await _apiClient.post(
-        '/auth/login',
+        '/login',
         body: {'email': email, 'password': password},
         requiresAuth: false,
       );
 
-      final token = response['access_token'];
-      final userData = response['user'];
+      if (response['success'] != true) {
+        return {
+          'success': false,
+          'message': response['message'] ?? 'Login failed',
+        };
+      }
+
+      final data = response['data'];
+      final token = data['token'];
+      final userData = data['user'];
 
       if (token == null || userData == null) {
-        throw ApiException(message: 'Invalid login response', statusCode: 500);
+        return {
+          'success': false,
+          'message': 'Invalid login response',
+        };
       }
 
       final user = User.fromJson(userData);
       await _saveUserData(token, user);
 
-      return user;
+      return {
+        'success': true,
+        'message': response['message'] ?? 'Login successful',
+        'user': user,
+      };
     } catch (e) {
-      if (e is ApiException) {
-        rethrow;
-      }
-      throw ApiException(
-        message: 'Login failed: ${e.toString()}',
-        statusCode: 0,
-      );
+      return {
+        'success': false,
+        'message': 'Login failed: ${e.toString()}',
+      };
     }
   }
 

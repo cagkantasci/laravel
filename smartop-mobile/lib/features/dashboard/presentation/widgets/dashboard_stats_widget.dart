@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/services/mock_auth_service.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/permission_service.dart';
 import '../../../reports/presentation/pages/reports_page.dart';
 import '../../../user_management/presentation/pages/user_management_page.dart';
@@ -24,7 +24,9 @@ class DashboardStatsWidget extends StatelessWidget {
       );
     }
 
-    final user = MockAuthService.getCurrentUser();
+    final authService = AuthService();
+    final user = authService.currentUser;
+
     if (user == null) {
       return const Center(child: Text('Kullanıcı bilgisi bulunamadı'));
     }
